@@ -145,8 +145,8 @@ const UchroniaGame: React.FC<UchroniaGameProps> = ({ onBack }) => {
                                 type={feedback}
                                 message={
                                     feedback === 'success'
-                                        ? 'Bien vu, c'était absurde !'
-                        : `L'absurde était : "${current.absurd}"`
+                                        ? "Bien vu, c'était absurde !"
+                                        : `L'absurde était : "${current.absurd}"`
                                 }
                             />
                         )}
