@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Home from './components/Home';
+import Leaderboard from './components/Leaderboard';
+import { useAuth } from './context/AuthContext';
 import SequenceGame from './games/SequenceGame';
 import NBackGame from './games/NBackGame';
 import ChunkingGame from './games/ChunkingGame';
@@ -10,16 +12,16 @@ import TrilemmaGame from './games/TrilemmaGame';
 import HumanAiGame from './games/HumanAiGame';
 import CausalGame from './games/CausalGame';
 
-
-
 const App: React.FC = () => {
     const [currentGame, setCurrentGame] = useState<string | null>(null);
+    const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const { user, login } = useAuth();
     const [userStats, setUserStats] = useState({ streak: 0, totalScore: 0 });
 
     useEffect(() => {
         const saved = JSON.parse(localStorage.getItem('neural_user') || '{"streak":0, "totalScore":0}');
-        setUserStats(saved);
-    }, [currentGame]);
+        setUserStats(user ? { streak: user.streak, totalScore: user.totalScore } : saved);
+    }, [currentGame, user]);
 
     const renderGame = () => {
         switch (currentGame) {
@@ -41,8 +43,6 @@ const App: React.FC = () => {
                 return <HumanAiGame onBack={() => setCurrentGame(null)} />;
             case 'causal':
                 return <CausalGame onBack={() => setCurrentGame(null)} />;
-
-
             default:
                 return (
                     <div
@@ -67,12 +67,22 @@ const App: React.FC = () => {
         }
     };
 
+    if (isLeaderboardOpen) {
+        return <Leaderboard onBack={() => setIsLeaderboardOpen(false)} />;
+    }
+
     return (
         <div className="app-container">
             <div className="grid-bg"></div>
             <main style={{ position: 'relative', zIndex: 1 }}>
                 {!currentGame ? (
-                    <Home userStats={userStats} onSelectGame={setCurrentGame} />
+                    <Home
+                        userStats={userStats}
+                        onSelectGame={setCurrentGame}
+                        onViewLeaderboard={() => setIsLeaderboardOpen(true)}
+                        onLogin={login}
+                        isLoggedIn={!!user}
+                    />
                 ) : (
                     renderGame()
                 )}
