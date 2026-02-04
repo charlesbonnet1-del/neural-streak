@@ -11,6 +11,17 @@ import FallacyGame from './games/FallacyGame';
 import TrilemmaGame from './games/TrilemmaGame';
 import HumanAiGame from './games/HumanAiGame';
 import CausalGame from './games/CausalGame';
+import RecallGame from './games/RecallGame';
+import ConstraintsGame from './games/ConstraintsGame';
+import SyntaxGame from './games/SyntaxGame';
+import ClicheGame from './games/ClicheGame';
+import MetaphorGame from './games/MetaphorGame';
+import SequencingGame from './games/SequencingGame';
+import ResourcesGame from './games/ResourcesGame';
+import AssociationsGame from './games/AssociationsGame';
+import UchroniaGame from './games/UchroniaGame';
+import ReactionGame from './games/ReactionGame';
+import FocusGame from './games/FocusGame';
 
 const App: React.FC = () => {
     const [currentGame, setCurrentGame] = useState<string | null>(null);
@@ -43,6 +54,28 @@ const App: React.FC = () => {
                 return <HumanAiGame onBack={() => setCurrentGame(null)} />;
             case 'causal':
                 return <CausalGame onBack={() => setCurrentGame(null)} />;
+            case 'recall':
+                return <RecallGame onBack={() => setCurrentGame(null)} />;
+            case 'constraints':
+                return <ConstraintsGame onBack={() => setCurrentGame(null)} />;
+            case 'syntax':
+                return <SyntaxGame onBack={() => setCurrentGame(null)} />;
+            case 'cliche':
+                return <ClicheGame onBack={() => setCurrentGame(null)} />;
+            case 'metaphor':
+                return <MetaphorGame onBack={() => setCurrentGame(null)} />;
+            case 'sequencing':
+                return <SequencingGame onBack={() => setCurrentGame(null)} />;
+            case 'resources':
+                return <ResourcesGame onBack={() => setCurrentGame(null)} />;
+            case 'associations':
+                return <AssociationsGame onBack={() => setCurrentGame(null)} />;
+            case 'uchronia':
+                return <UchroniaGame onBack={() => setCurrentGame(null)} />;
+            case 'reaction':
+                return <ReactionGame onBack={() => setCurrentGame(null)} />;
+            case 'focus':
+                return <FocusGame onBack={() => setCurrentGame(null)} />;
             default:
                 return (
                     <div
@@ -92,3 +125,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

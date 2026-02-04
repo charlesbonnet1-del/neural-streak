@@ -1,6 +1,6 @@
-import { Category, GameInfo, HallucinationData, FallacyData, TrilemmaData, HumanAiData, CausalData, SyntaxData, ClicheData, MetaphorData, SequenceData, AssociationData, UchroniaData, Color } from '../types';
+import { Category, GameInfo, HallucinationData, FallacyData, TrilemmaData, HumanAiData, CausalData, SyntaxData, ClicheData, MetaphorData, SequenceData, AssociationData, UchroniaData, Color, ConstraintsData, ResourcesData } from '../types';
 
-export const COLORS: Color[] = ['cyan', 'magenta', 'yellow', 'purple', 'orange', 'green'];
+export const COLORS: Color[] = ['cyan', 'magenta', 'yellow', 'purple', 'orange', 'green', 'red', 'blue'];
 
 export const COLOR_HEX: Record<Color, string> = {
     cyan: '#00ffd5',
@@ -9,6 +9,8 @@ export const COLOR_HEX: Record<Color, string> = {
     purple: '#a855f7',
     orange: '#ff6b2c',
     green: '#22c55e',
+    red: '#ef4444',
+    blue: '#3b82f6',
 };
 
 export const CATEGORIES: Category[] = [
@@ -130,4 +132,85 @@ export const UCHRONIA_DATA: UchroniaData[] = [
     { scenario: "Et si Internet n'avait jamais existé ?", consequences: ["Journaux papier dominants", "Commerce local", "Bibliothèques essentielles", "Pas de télétravail"], absurd: "Les poissons auraient conquis la Terre" },
     { scenario: "Et si les humains hibernaient ?", consequences: ["Économie saisonnière", "Chambres d'hibernation", "Pas de fêtes d'hiver", "Réserves vitales"], absurd: "Les voitures auraient des roues carrées" },
     { scenario: "Et si l'écriture n'existait pas ?", consequences: ["Tradition orale dominante", "Contrats verbaux", "Mémoire développée", "Histoire par griots"], absurd: "Les arbres parleraient français" }
+];
+
+export const RECALL_WORDS: string[] = [
+    "soleil", "forêt", "océan", "crypto", "nuage", "montagne", "rivière", "château",
+    "étoile", "jardin", "tempête", "silence", "flamme", "horizon", "mystère", "voyage",
+    "rêve", "lumière", "ombre", "parfum", "mélodie", "chemin", "aurore", "crépuscule"
+];
+
+export const CONSTRAINTS_DATA: ConstraintsData[] = [
+    {
+        words: ["soleil", "mystère", "courir"],
+        validPhrases: [
+            "Le soleil cache un mystère que je veux découvrir en courant",
+            "Je cours vers le mystère du soleil couchant"
+        ],
+        invalidPhrases: [
+            "La lune brille dans la nuit étoilée",
+            "Courir mystère soleil dans le vide"
+        ]
+    },
+    {
+        words: ["temps", "sable", "main"],
+        validPhrases: [
+            "Le temps file comme le sable entre mes mains",
+            "Dans ma main, le sable du temps s'écoule"
+        ],
+        invalidPhrases: [
+            "L'horloge marque les heures qui passent",
+            "Main sable temps couler vite"
+        ]
+    },
+    {
+        words: ["silence", "étoile", "rêver"],
+        validPhrases: [
+            "Dans le silence de la nuit, je rêve aux étoiles",
+            "Les étoiles rêvent en silence"
+        ],
+        invalidPhrases: [
+            "Le bruit de la ville m'empêche de dormir",
+            "Étoile silence rêver nuit"
+        ]
+    }
+];
+
+export const RESOURCES_DATA: ResourcesData[] = [
+    {
+        scenario: "Lancement produit",
+        budget: 100,
+        time: 10,
+        objectives: [
+            { name: "Marketing viral", budgetCost: 40, timeCost: 3, value: 35 },
+            { name: "Améliorer produit", budgetCost: 30, timeCost: 5, value: 40 },
+            { name: "Support client", budgetCost: 20, timeCost: 4, value: 25 },
+            { name: "Veille concurrence", budgetCost: 15, timeCost: 2, value: 15 }
+        ],
+        optimalValue: 75
+    },
+    {
+        scenario: "Startup Weekend",
+        budget: 50,
+        time: 8,
+        objectives: [
+            { name: "Prototype MVP", budgetCost: 20, timeCost: 4, value: 45 },
+            { name: "Pitch deck", budgetCost: 10, timeCost: 3, value: 30 },
+            { name: "Étude marché", budgetCost: 15, timeCost: 2, value: 20 },
+            { name: "Networking", budgetCost: 10, timeCost: 2, value: 15 }
+        ],
+        optimalValue: 80
+    },
+    {
+        scenario: "Événement annuel",
+        budget: 80,
+        time: 12,
+        objectives: [
+            { name: "Réserver salle", budgetCost: 35, timeCost: 2, value: 30 },
+            { name: "Inviter speakers", budgetCost: 25, timeCost: 4, value: 40 },
+            { name: "Catering premium", budgetCost: 30, timeCost: 3, value: 25 },
+            { name: "Goodies", budgetCost: 15, timeCost: 2, value: 10 }
+        ],
+        optimalValue: 85
+    }
 ];

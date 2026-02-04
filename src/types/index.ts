@@ -1,4 +1,4 @@
-export type Color = 'cyan' | 'magenta' | 'yellow' | 'purple' | 'orange' | 'green';
+export type Color = 'cyan' | 'magenta' | 'yellow' | 'purple' | 'orange' | 'green' | 'red' | 'blue';
 
 export interface Category {
     id: string;
@@ -75,4 +75,25 @@ export interface UchroniaData {
     scenario: string;
     consequences: string[];
     absurd: string;
+}
+
+export interface ConstraintsData {
+    words: string[];
+    validPhrases: string[];
+    invalidPhrases: string[];
+}
+
+export interface ResourcesData {
+    scenario: string;
+    budget: number;
+    time: number;
+    objectives: ResourceObjective[];
+    optimalValue: number;
+}
+
+export interface ResourceObjective {
+    name: string;
+    budgetCost: number;
+    timeCost: number;
+    value: number;
 }
