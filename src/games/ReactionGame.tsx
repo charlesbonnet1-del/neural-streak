@@ -22,7 +22,7 @@ const ReactionGame: React.FC<ReactionGameProps> = ({ onBack }) => {
     const [reactionTimes, setReactionTimes] = useState<number[]>([]);
     const [feedback, setFeedback] = useState<'hit' | 'miss' | 'false' | null>(null);
     const showTimeRef = useRef<number>(0);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const maxRounds = 20;
 
     const TARGET_COLOR: StimulusColor = 'green';
