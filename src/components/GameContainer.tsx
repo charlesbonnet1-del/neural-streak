@@ -87,7 +87,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameId, onBack, children 
                 {children({ onScore: handleScore, isActive: phase === 'playing' })}
             </div>
             {phase === 'countdown' && (
-                <CountdownOverlay onComplete={() => setPhase('playing')} />
+                <CountdownOverlay count={3} onComplete={() => setPhase('playing')} />
             )}
         </div>
     );
