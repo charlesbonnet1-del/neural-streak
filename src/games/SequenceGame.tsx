@@ -13,7 +13,7 @@ interface SequenceGameProps {
     isActive: boolean;
 }
 
-const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }) => {
+const SequenceGame: React.FC<SequenceGameProps> = ({ onScore, isActive }) => {
     const [phase, setPhase] = useState<'ready' | 'showing' | 'input'>('ready');
     const [sequence, setSequence] = useState<Color[]>([]);
     const [userSeq, setUserSeq] = useState<Color[]>([]);
@@ -71,7 +71,7 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
             setTimeout(() => {
                 setFeedback(null);
                 if (isActive) setPhase('ready');
-            }, 1000);
+            }, 800);
             return;
         }
 
@@ -82,7 +82,7 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
                 setFeedback(null);
                 setLevel((l: number) => l + 1);
                 if (isActive) setPhase('ready');
-            }, 1000);
+            }, 800);
         }
     };
 
@@ -92,7 +92,7 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
 
     return (
         <div
-            className={`fadeIn ${flashClass}`}
+            className={flashClass}
             style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -109,7 +109,7 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
                 {phase === 'showing' && `Mémorise ! (${showIdx + 1}/${sequence.length})`}
                 {phase === 'input' && `À toi ! (${userSeq.length}/${sequence.length})`}
-                {phase === 'ready' && 'Prépare-toi...'}
+                {(phase === 'ready' && !feedback) && 'Prépare-toi...'}
             </p>
             <div
                 className={feedback === 'error' ? 'shake' : ''}
