@@ -190,14 +190,16 @@ export const FALLACY_DATA: FallacyData[] = [
 ];
 
 export const TRILEMMA_DATA: TrilemmaData[] = [
-    { statement: "L'eau bout à 100°C au niveau de la mer.", answer: "true" },
-    { statement: "La population mondiale atteindra 10 milliards en 2050.", answer: "unknown" },
-    { statement: "Napoléon est mort en 1821 à Sainte-Hélène.", answer: "true" },
-    { statement: "L'IA sera plus intelligente que l'humain d'ici 2030.", answer: "unknown" },
-    { statement: "Le Soleil tourne autour de la Terre.", answer: "false" },
-    { statement: "Shakespeare a écrit 'Don Quichotte'.", answer: "false" },
-    { statement: "Le stress chronique affecte le système immunitaire.", answer: "true" },
-    { statement: "Les dauphins sont les animaux les plus intelligents.", answer: "unknown" }
+    { statement: "Les humains n'utilisent que 10% de leur cerveau.", answer: "false" },
+    { statement: "La lumière voyage à environ 300 000 km/s dans le vide.", answer: "true" },
+    { statement: "Nous découvrirons une vie extraterrestre intelligente d'ici 50 ans.", answer: "unknown" },
+    { statement: "La foudre ne frappe jamais deux fois au même endroit.", answer: "false" },
+    { statement: "L'aspirine a été extraite à l'origine de l'écorce de saule.", answer: "true" },
+    { statement: "Le Bitcoin sera la monnaie mondiale de référence en 2040.", answer: "unknown" },
+    { statement: "Le café bloque la croissance des enfants.", answer: "false" },
+    { statement: "L'ADN humain est identique à environ 98% à celui du chimpanzé.", answer: "true" },
+    { statement: "La Grande Muraille de Chine est visible à l'œil nu depuis la Lune.", answer: "false" },
+    { statement: "L'IA atteindra une singularité technologique avant 2050.", answer: "unknown" }
 ];
 
 export const HUMAN_AI_DATA: HumanAiData[] = [
