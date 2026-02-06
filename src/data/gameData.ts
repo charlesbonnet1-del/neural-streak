@@ -212,9 +212,11 @@ export const HUMAN_AI_DATA: HumanAiData[] = [
 ];
 
 export const CAUSAL_DATA: CausalData[] = [
-    { event: "Hausse des taux d'intérêt", steps: ["Banque centrale augmente les taux", "Emprunts plus chers", "Ménages empruntent moins", "Consommation ralentit", "Inflation diminue"] },
-    { event: "Déforestation massive", steps: ["Coupe des arbres", "Perte d'habitat", "Érosion des sols", "Moins d'absorption CO2", "Changement climatique"] },
-    { event: "Produit viral", steps: ["Innovation produit", "Premiers enthousiastes", "Bouche-à-oreille", "Couverture médiatique", "Adoption massive"] }
+    { event: "Cycle de la Découverte", steps: ["Curiosité", "Questionnement", "Recherche", "Découverte brute", "Nouvelle Idée"] },
+    { event: "Cascade Systémique", steps: ["Gravité", "Saturation du sol", "Éboulement", "Barrage rompt", "Inondation"] },
+    { event: "Cercle de l'Apprentissage", steps: ["Effort physique", "Signal neurologique", "Fatigue", "Repos réparateur", "Maîtrise accrue"] },
+    { event: "Logique de Résolution", steps: ["Problème", "Analyse", "Hypothèse", "Test expérimental", "Solution validée"] },
+    { event: "Érosion Côtière", steps: ["Vagues répétées", "Retrait du sable", "Pente instable", "Effondrement", "Recul du trait de côte"] }
 ];
 
 export const SYNTAX_DATA: SyntaxData[] = [
