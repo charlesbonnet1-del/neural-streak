@@ -24,18 +24,16 @@ const UpdatingGame: React.FC<UpdatingGameProps> = ({ onScore, isActive }) => {
     const [options, setOptions] = useState<string[]>([]);
     const [level, setLevel] = useState(1);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
-    const [timer, setTimer] = useState(0);
+    const [timer, setTimer] = useState(-1);
 
     const genRound = useCallback(() => {
         if (!isActive) return;
 
-        // Adaptive list size: 3 colors at start, increases slowly
+        // ... logic unchanged ...
         const size = level > 6 ? 5 : level > 3 ? 4 : 3;
         const init = Array.from({ length: size }, () => pick(COLORS));
         let current = [...init];
         const ops: string[] = [];
-
-        // Number of operations: 1 at start, more as level goes up
         const numOps = level > 5 ? 3 : level > 2 ? 2 : 1;
 
         for (let i = 0; i < numOps; i++) {
@@ -81,7 +79,6 @@ const UpdatingGame: React.FC<UpdatingGameProps> = ({ onScore, isActive }) => {
             if (w !== correct) wrongs.add(w);
             safety++;
         }
-        // If shuffle isn't enough, replace some colors
         if (wrongs.size < 3) {
             while (wrongs.size < 3) {
                 const w = current.map((c, i) => i === 0 ? pick(COLORS) : c).join('-');
@@ -102,6 +99,7 @@ const UpdatingGame: React.FC<UpdatingGameProps> = ({ onScore, isActive }) => {
             setLevel(1);
             setInitList([]);
             setFinalList([]);
+            setTimer(-1);
         }
     }, [isActive]);
 
@@ -111,16 +109,16 @@ const UpdatingGame: React.FC<UpdatingGameProps> = ({ onScore, isActive }) => {
         if (phase === 'memorize' && timer > 0) {
             const t = setTimeout(() => setTimer(timer - 1), 1000);
             return () => clearTimeout(t);
-        } else if (phase === 'memorize' && timer === 0) {
+        } else if (phase === 'memorize' && timer === 0 && initList.length > 0) {
             setPhase('transform');
-            setTimer(3 + (instructions.length - 1) * 2); // More time for more ops
+            setTimer(3 + (instructions.length - 1) * 2);
         } else if (phase === 'transform' && timer > 0) {
             const t = setTimeout(() => setTimer(timer - 1), 1000);
             return () => clearTimeout(t);
-        } else if (phase === 'transform' && timer === 0) {
+        } else if (phase === 'transform' && timer === 0 && instructions.length > 0) {
             setPhase('recall');
         }
-    }, [isActive, phase, timer, instructions.length]);
+    }, [isActive, phase, timer, initList.length, instructions.length]);
 
     const handleAnswer = (ans: string) => {
         if (!isActive || feedback) return;
