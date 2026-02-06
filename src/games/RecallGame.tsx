@@ -76,7 +76,7 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
         setTargets(newTargets);
         setOptions(shuffle([...newTargets, ...distractors]));
         setSelected([]);
-        setTimer(4);
+        setTimer(3);
         setPhase('memorize');
         setFeedback(null);
     }, [level, isActive]);
@@ -114,18 +114,30 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
     const handleWordSelect = (word: string) => {
         if (!isActive || phase !== 'recall' || feedback) return;
 
-        if (selected.includes(word)) {
-            setSelected(selected.filter(w => w !== word));
+        const isCurrentlySelected = selected.includes(word);
+        let nextSelected: string[];
+
+        if (isCurrentlySelected) {
+            nextSelected = selected.filter(w => w !== word);
         } else if (selected.length < targets.length) {
-            setSelected([...selected, word]);
+            nextSelected = [...selected, word];
+        } else {
+            return;
+        }
+
+        setSelected(nextSelected);
+
+        // Auto-validate if we just reached the target count
+        if (nextSelected.length === targets.length) {
+            validateRecall(nextSelected);
         }
     };
 
-    const validateRecall = () => {
+    const validateRecall = (currentSelected: string[]) => {
         if (!isActive || phase !== 'recall' || feedback) return;
 
-        const isCorrect = selected.length === targets.length &&
-            selected.every(w => targets.includes(w));
+        const isCorrect = currentSelected.length === targets.length &&
+            currentSelected.every(w => targets.includes(w));
 
         if (isCorrect) {
             setFeedback('success');
@@ -136,9 +148,14 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
             }, 1000);
         } else {
             setFeedback('error');
+            // User requested: "si l on ne clique pas les bons mots, on ne reste pas bloqués mais l'on passe au suivant"
+            // So we move to next level/round even on error? Or just next round of same level? 
+            // Usually "pass to next" implies progression or at least not repeating the same words.
+            // Let's increment level anyway to keep it moving, or just start a new round.
             setTimeout(() => {
                 setFeedback(null);
-                setSelected([]);
+                setLevel(l => Math.max(1, l - 1)); // Penalty: drop level? Or just continue.
+                startRound();
             }, 1200);
         }
     };
@@ -282,23 +299,6 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
                                 ))}
                             </div>
                         </Card>
-
-                        <button
-                            className="btn"
-                            disabled={selected.length !== targets.length || !!feedback}
-                            onClick={validateRecall}
-                            style={{
-                                height: 64, width: 280, borderRadius: 'var(--radius-xl)', border: 'none',
-                                background: 'var(--purple)', color: 'white', fontWeight: 900, fontSize: '1.1rem',
-                                letterSpacing: '0.1em',
-                                boxShadow: selected.length === targets.length ? '0 8px 0 #7e22ce, 0 15px 30px rgba(168,85,247,0.4)' : 'none',
-                                opacity: selected.length === targets.length ? 1 : 0.4,
-                                transform: feedback ? 'translateY(4px)' : 'none',
-                                cursor: selected.length === targets.length ? 'pointer' : 'default'
-                            }}
-                        >
-                            VÉRIFIER LE RAPPEL ({selected.length}/{targets.length})
-                        </button>
                     </motion.div>
                 )}
             </div>
