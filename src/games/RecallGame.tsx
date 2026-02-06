@@ -1,12 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import Header from '../components/Header';
-import ResultScreen from '../components/ResultScreen';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Card from '../components/Card';
+import Stat from '../components/Stat';
 import { RECALL_WORDS } from '../data/gameData';
 import { pickN, shuffle } from '../utils/helpers';
-
-interface RecallGameProps {
-    onBack: () => void;
-}
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface RecallGameProps {
     onBack: () => void;
@@ -14,210 +11,272 @@ interface RecallGameProps {
     isActive: boolean;
 }
 
-type Phase = 'memorize' | 'distract' | 'recall' | 'result';
+type Phase = 'memorize' | 'distract' | 'recall';
 
-const RecallGame: React.FC<RecallGameProps> = ({ onBack, onScore, isActive }) => {
+interface CloudWord {
+    text: string;
+    id: string;
+    x: number;
+    y: number;
+    size: number;
+    color: string;
+    isTarget: boolean;
+}
+
+const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
     const [phase, setPhase] = useState<Phase>('memorize');
     const [targets, setTargets] = useState<string[]>([]);
     const [options, setOptions] = useState<string[]>([]);
     const [selected, setSelected] = useState<string[]>([]);
-    const [round, setRound] = useState(0);
-    const [lives, setLives] = useState(3);
     const [level, setLevel] = useState(1);
     const [timer, setTimer] = useState(5);
-    const [calcNumbers, setCalcNumbers] = useState<[number, number]>([0, 0]);
-    const maxRounds = 5;
+    const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
+    const [cloudWords, setCloudWords] = useState<CloudWord[]>([]);
+    const [oddWordFound, setOddWordFound] = useState(false);
+
+    const generateCloud = useCallback((targetWords: string[]) => {
+        const cloudSize = 15;
+        // Mix of semantically similar words and random ones
+        // In a real app, we'd have a semantic map. Here we'll just pick more words from RECALL_WORDS
+        const others = pickN(RECALL_WORDS.filter(w => !targetWords.includes(w)), cloudSize);
+
+        // Pick one "Odd" word that will be in a different color
+        const oddIdx = Math.floor(Math.random() * others.length);
+
+        const words: CloudWord[] = others.map((word, i) => ({
+            text: word,
+            id: `cloud-${i}-${word}`,
+            x: Math.random() * 80 + 10, // 10% to 90%
+            y: Math.random() * 80 + 10,
+            size: Math.random() * 1.5 + 0.8,
+            color: i === oddIdx ? 'var(--magenta)' : 'var(--text-primary)',
+            isTarget: i === oddIdx
+        }));
+        setCloudWords(words);
+        setOddWordFound(false);
+    }, []);
 
     const startRound = useCallback(() => {
         if (!isActive) return;
-        const wordCount = 3 + level;
-        const distractorCount = 3;
+        const wordCount = Math.min(3 + Math.floor(level / 2), 8);
+        const distractorCount = 6;
         const newTargets = pickN(RECALL_WORDS, wordCount);
-        const newDistractors = pickN(
+        const distractors = pickN(
             RECALL_WORDS.filter((w) => !newTargets.includes(w)),
             distractorCount
         );
+
         setTargets(newTargets);
-        setOptions(shuffle([...newTargets, ...newDistractors]));
+        setOptions(shuffle([...newTargets, distractors]));
         setSelected([]);
         setTimer(5);
         setPhase('memorize');
+        setFeedback(null);
     }, [level, isActive]);
 
     useEffect(() => {
         if (isActive) {
             startRound();
         } else {
-            setRound(0);
-            setLives(3);
             setLevel(1);
-            setTargets([]);
-            setOptions([]);
-            setSelected([]);
             setPhase('memorize');
+            setTargets([]);
         }
     }, [isActive, startRound]);
 
-    // Timer for memorize phase
+    // Timer Logic
     useEffect(() => {
-        if (!isActive) return;
-        if (phase === 'memorize' && timer > 0) {
-            const t = setTimeout(() => setTimer((t: number) => t - 1), 1000);
+        if (!isActive || feedback) return;
+
+        if (timer > 0) {
+            const t = setTimeout(() => setTimer(timer - 1), 1000);
             return () => clearTimeout(t);
         }
-        if (phase === 'memorize' && timer === 0) {
-            // Start distraction
-            setCalcNumbers([
-                Math.floor(Math.random() * 50) + 10,
-                Math.floor(Math.random() * 50) + 10,
-            ]);
-            setTimer(5);
-            setPhase('distract');
-        }
-    }, [phase, timer, isActive]);
 
-    // Timer for distract phase
-    useEffect(() => {
-        if (!isActive) return;
-        if (phase === 'distract' && timer > 0) {
-            const t = setTimeout(() => setTimer((t: number) => t - 1), 1000);
-            return () => clearTimeout(t);
+        if (timer === 0) {
+            if (phase === 'memorize') {
+                generateCloud(targets);
+                setTimer(8); // Distraction phase length
+                setPhase('distract');
+            } else if (phase === 'distract') {
+                setPhase('recall');
+            }
         }
-        if (phase === 'distract' && timer === 0) {
-            setPhase('recall');
-        }
-    }, [phase, timer, isActive]);
-
-    const handleCalcAnswer = (isCorrect: boolean) => {
-        if (!isActive) return;
-        if (isCorrect) {
-            onScore(5);
-        }
-        setPhase('recall');
-    };
+    }, [timer, phase, isActive, feedback, targets, generateCloud]);
 
     const handleWordSelect = (word: string) => {
-        if (!isActive) return;
+        if (!isActive || phase !== 'recall' || feedback) return;
+
         if (selected.includes(word)) {
-            setSelected(selected.filter((w) => w !== word));
-        } else {
+            setSelected(selected.filter(w => w !== word));
+        } else if (selected.length < targets.length) {
             setSelected([...selected, word]);
         }
     };
 
     const validateRecall = () => {
-        if (!isActive) return;
-        const hits = selected.filter((w) => targets.includes(w)).length;
-        const falseAlarms = selected.filter((w) => !targets.includes(w)).length;
-        const points = hits * 20 - falseAlarms * 10;
-        const bonus = hits === targets.length && falseAlarms === 0 ? level * 10 : 0;
-        const totalPoints = Math.max(0, points + bonus);
+        if (!isActive || phase !== 'recall' || feedback) return;
 
-        if (hits < targets.length / 2 || falseAlarms > 2) {
-            setLives((l: number) => l - 1);
+        const isCorrect = selected.length === targets.length &&
+            selected.every(w => targets.includes(w));
+
+        if (isCorrect) {
+            setFeedback('success');
+            onScore(level * 100);
+            setTimeout(() => {
+                setLevel(l => l + 1);
+                startRound();
+            }, 1000);
+        } else {
+            setFeedback('error');
+            setTimeout(() => {
+                setFeedback(null);
+                setSelected([]);
+            }, 1200);
         }
+    };
 
-        onScore(totalPoints);
-
-        if (round + 1 < maxRounds) {
-            setRound((r: number) => r + 1);
-            setLevel((l: number) => l + 1);
-            startRound();
+    const handleCloudClick = (word: CloudWord) => {
+        if (word.isTarget) {
+            setOddWordFound(true);
+            onScore(10 * level); // Minor bonus for finding the odd one
         }
     };
 
     if (!isActive) return null;
 
+    const flashClass = feedback === 'success' ? 'flash-success' : feedback === 'error' ? 'flash-error' : '';
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <div
-                style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                }}
-            >
+        <div
+            className={`fadeIn ${flashClass}`}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 24,
+                transition: 'background-color 0.4s ease',
+                position: 'relative'
+            }}
+        >
+            <div style={{ position: 'absolute', top: 20, right: 20 }}>
+                <Stat label="NIVEAU" value={level} color="var(--purple)" />
+            </div>
+
+            {/* Overlays */}
+            <AnimatePresence>
+                {feedback === 'success' && (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} style={{
+                        position: 'absolute', zIndex: 100, fontSize: '10rem', color: 'var(--green)', opacity: 0.8
+                    }}>✓</motion.div>
+                )}
+                {feedback === 'error' && (
+                    <motion.div initial={{ x: -20 }} animate={{ x: [0, -10, 10, -10, 10, 0] }} exit={{ opacity: 0 }} style={{
+                        position: 'absolute', zIndex: 100, fontSize: '10rem', color: 'var(--red)', opacity: 0.8
+                    }}>✗</motion.div>
+                )}
+            </AnimatePresence>
+
+            <div style={{ width: '100%', maxWidth: 640 }}>
+                <p style={{
+                    color: 'var(--text-muted)', textAlign: 'center', marginBottom: 16,
+                    fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 700
+                }}>
+                    Rappel Différé
+                </p>
+
                 {phase === 'memorize' && (
-                    <div className="fadeIn" style={{ textAlign: 'center' }}>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                            Mémorise ces {targets.length} mots : ({timer}s)
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                            {targets.map((word) => (
-                                <div
-                                    key={word}
-                                    className="glass"
-                                    style={{
-                                        padding: '12px 20px',
-                                        fontSize: '1.1rem',
-                                        fontWeight: 600,
-                                    }}
-                                >
-                                    {word}
-                                </div>
-                            ))}
-                        </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <Card style={{ padding: '40px 32px', marginBottom: 24 }}>
+                            <h2 style={{ fontSize: '1.2rem', marginBottom: 24, opacity: 0.6 }}>Mémorisez ces mots</h2>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                                {targets.map(w => (
+                                    <span key={w} style={{
+                                        padding: '10px 20px', background: 'var(--bg-card)',
+                                        borderRadius: 'var(--radius-md)', fontWeight: 700, fontSize: '1.2rem'
+                                    }}>
+                                        {w}
+                                    </span>
+                                ))}
+                            </div>
+                        </Card>
+                        <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--purple)' }}>{timer}s</div>
                     </div>
                 )}
 
                 {phase === 'distract' && (
-                    <div className="fadeIn" style={{ textAlign: 'center' }}>
-                        <p style={{ color: 'var(--yellow)', marginBottom: 16, fontSize: '1.2rem' }}>
-                            🧮 Calcule ! ({timer}s)
-                        </p>
-                        <p style={{ fontSize: '2rem', fontWeight: 700, marginBottom: 24 }}>
-                            {calcNumbers[0]} + {calcNumbers[1]} = ?
-                        </p>
-                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                            {[
-                                calcNumbers[0] + calcNumbers[1],
-                                calcNumbers[0] + calcNumbers[1] + 3,
-                                calcNumbers[0] + calcNumbers[1] - 2,
-                                calcNumbers[0] + calcNumbers[1] + 7,
-                            ]
-                                .sort(() => Math.random() - 0.5)
-                                .map((ans) => (
-                                    <button
-                                        key={ans}
-                                        className="btn btn-secondary"
-                                        onClick={() => {
-                                            handleCalcAnswer(ans === calcNumbers[0] + calcNumbers[1]);
-                                        }}
-                                    >
-                                        {ans}
-                                    </button>
-                                ))}
+                    <div style={{ textAlign: 'center', height: 400, position: 'relative' }}>
+                        <h2 style={{ fontSize: '1.1rem', marginBottom: 8, color: 'var(--magenta)', fontWeight: 800 }}>
+                            {oddWordFound ? "Bien vu ! Continuez de regarder..." : "TROUVEZ L'INTRUS (COULEUR) !"}
+                        </h2>
+                        <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: 'rgba(0,0,0,0.02)', borderRadius: 'var(--radius-lg)' }}>
+                            {cloudWords.map(w => (
+                                <motion.div
+                                    key={w.id}
+                                    initial={{ x: `${w.x}%`, y: `${w.y}%`, opacity: 0 }}
+                                    animate={{
+                                        x: [`${w.x}%`, `${(w.x + 10) % 100}%`, `${w.x}%`],
+                                        y: [`${w.y}%`, `${(w.y + 10) % 100}%`, `${w.y}%`],
+                                        opacity: 1
+                                    }}
+                                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                                    onClick={() => handleCloudClick(w)}
+                                    style={{
+                                        position: 'absolute', cursor: 'pointer',
+                                        fontSize: `${w.size}rem`, fontWeight: 700,
+                                        color: oddWordFound && w.isTarget ? 'var(--green)' : w.color,
+                                        textShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    {w.text}
+                                </motion.div>
+                            ))}
                         </div>
+                        <div style={{ marginTop: 16, fontSize: '1.5rem', fontWeight: 800 }}>{timer}s</div>
                     </div>
                 )}
 
                 {phase === 'recall' && (
-                    <div className="fadeIn" style={{ textAlign: 'center', width: '100%', maxWidth: 500 }}>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                            Sélectionne les mots mémorisés :
-                        </p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                            {options.map((word) => (
-                                <button
-                                    key={word}
-                                    className={`btn ${selected.includes(word) ? 'btn-primary' : 'btn-secondary'}`}
-                                    onClick={() => handleWordSelect(word)}
-                                    style={{ padding: '10px 18px' }}
-                                >
-                                    {word}
-                                </button>
-                            ))}
-                        </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <Card style={{ padding: '32px', marginBottom: 32 }}>
+                            <h2 style={{ fontSize: '1.2rem', marginBottom: 24, opacity: 0.6 }}>Sélectionnez les mots du début</h2>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+                                {options.filter(w => typeof w === 'string').map(w => (
+                                    <button
+                                        key={w}
+                                        className="btn"
+                                        onClick={() => handleWordSelect(w)}
+                                        style={{
+                                            padding: '12px 24px', borderRadius: 'var(--radius-md)',
+                                            background: selected.includes(w) ? 'var(--purple)' : 'white',
+                                            color: selected.includes(w) ? 'white' : 'var(--text-primary)',
+                                            border: 'none', fontWeight: 700,
+                                            boxShadow: '0 4px 0 rgba(0,0,0,0.05)',
+                                            transform: selected.includes(w) ? 'translateY(2px)' : 'none'
+                                        }}
+                                    >
+                                        {w}
+                                    </button>
+                                ))}
+                            </div>
+                        </Card>
+
                         <button
-                            className="btn btn-primary"
+                            className="btn"
+                            disabled={selected.length !== targets.length || !!feedback}
                             onClick={validateRecall}
-                            style={{ marginTop: 24 }}
-                            disabled={selected.length === 0}
+                            style={{
+                                height: 56, width: 220, borderRadius: 'var(--radius-lg)', border: 'none',
+                                background: 'var(--purple)', color: 'white', fontWeight: 800,
+                                boxShadow: selected.length === targets.length ? '0 6px 0 #7e22ce, 0 10px 20px rgba(168,85,247,0.3)' : 'none',
+                                opacity: selected.length === targets.length ? 1 : 0.5,
+                                transform: feedback ? 'translateY(4px)' : 'none'
+                            }}
                         >
-                            Valider ({selected.length} sélectionnés)
+                            VALIDER ({selected.length}/{targets.length})
                         </button>
                     </div>
                 )}
