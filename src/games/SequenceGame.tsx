@@ -88,12 +88,25 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
 
     if (!isActive) return null;
 
+    const flashClass = feedback === 'success' ? 'flash-success' : feedback === 'error' ? 'flash-error' : '';
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div
+            className={`fadeIn ${flashClass}`}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 20,
+                transition: 'background-color 0.3s ease'
+            }}
+        >
             <div style={{ position: 'absolute', top: 20, right: 20 }}>
-                <Stat label="NIVEAU" value={level} color="var(--cyan)" />
+                <Stat label="NIVEAU" value={level} color="var(--blue)" />
             </div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontFamily: 'var(--font-mono)' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>
                 {phase === 'showing' && `Mémorise ! (${showIdx + 1}/${sequence.length})`}
                 {phase === 'input' && `À toi ! (${userSeq.length}/${sequence.length})`}
                 {phase === 'ready' && 'Prépare-toi...'}
@@ -117,17 +130,16 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
                                 border: 'none',
                                 background: COLOR_HEX[c],
                                 cursor: phase === 'input' && !feedback ? 'pointer' : 'default',
-                                opacity: phase === 'showing' && showIdx >= 0 && sequence[showIdx] !== c ? 0.3 : 1,
-                                transform: isShowing || isClicking ? 'scale(1.15)' : 'scale(1)',
-                                boxShadow: isShowing || isClicking ? `0 0 30px ${COLOR_HEX[c]}` : 'none',
+                                opacity: phase === 'showing' && showIdx >= 0 && sequence[showIdx] !== c ? 0.4 : 1,
+                                transform: isShowing || isClicking ? 'scale(1.1)' : 'scale(1)',
+                                boxShadow: isShowing || isClicking ? `0 0 20px -5px ${COLOR_HEX[c]}` : 'var(--shadow-sm)',
                                 transition: 'all 0.1s ease',
-                                filter: isClicking ? 'brightness(1.5)' : 'none',
+                                filter: isClicking ? 'brightness(1.1)' : 'none',
                             }}
                         />
                     );
                 })}
             </div>
-            {feedback && <Feedback type={feedback} message={feedback === 'success' ? 'Parfait !' : 'Raté !'} />}
         </div>
     );
 };
