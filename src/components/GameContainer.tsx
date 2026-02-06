@@ -13,15 +13,20 @@ interface GameContainerProps {
 }
 
 const GameContainer: React.FC<GameContainerProps> = ({ gameId, onBack, children }) => {
-    const [phase, setPhase] = useState<'tutorial' | 'countdown' | 'playing' | 'result'>('tutorial');
+    const [phase, setPhase] = useState<'tutorial' | 'practice' | 'countdown' | 'playing' | 'result'>('tutorial');
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
+    const [practiceRounds, setPracticeRounds] = useState(0);
     const gameInfo = GAMES[gameId];
     const { addScore } = useProgression();
 
     const handleScore = useCallback((s: number) => {
-        setScore((prev) => prev + s);
-    }, []);
+        if (phase === 'playing') {
+            setScore((prev) => prev + s);
+        } else if (phase === 'practice') {
+            setPracticeRounds((prev) => prev + 1);
+        }
+    }, [phase]);
 
     const finishGame = useCallback(() => {
         setPhase('result');
@@ -40,14 +45,14 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameId, onBack, children 
     }, [phase, timeLeft, finishGame]);
 
     if (phase === 'result') {
-        const game = gameInfo;
         return (
             <ResultScreen
                 score={score}
                 onRetry={() => {
                     setScore(0);
                     setTimeLeft(60);
-                    setPhase('countdown');
+                    setPracticeRounds(0);
+                    setPhase('tutorial');
                 }}
                 onBack={onBack}
             />
@@ -65,9 +70,14 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameId, onBack, children 
                         <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.6 }}>
                             {gameInfo.tutorial}
                         </p>
-                        <button className="btn btn-primary" onClick={() => setPhase('countdown')} style={{ width: '100%' }}>
-                            C'est parti !
-                        </button>
+                        <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                            <button className="btn btn-secondary" onClick={() => setPhase('countdown')} style={{ flex: 1 }}>
+                                Passer le test
+                            </button>
+                            <button className="btn btn-primary" onClick={() => setPhase('practice')} style={{ flex: 1 }}>
+                                Essayer (2 tours)
+                            </button>
+                        </div>
                     </Card>
                 </div>
             </div>
@@ -77,14 +87,37 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameId, onBack, children 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
             <Header
-                title={gameInfo.name}
+                title={gameInfo.name + (phase === 'practice' ? ' (Entraînement)' : '')}
                 onBack={onBack}
                 score={score}
-                timer={timeLeft}
-                progress={((60 - timeLeft) / 60) * 100}
+                timer={phase === 'playing' ? timeLeft : undefined}
+                progress={phase === 'playing' ? ((60 - timeLeft) / 60) * 100 : (practiceRounds / 2) * 100}
             />
             <div style={{ flex: 1, position: 'relative' }}>
-                {children({ onScore: handleScore, isActive: phase === 'playing' })}
+                {children({ onScore: handleScore, isActive: phase === 'playing' || phase === 'practice' })}
+
+                {phase === 'practice' && practiceRounds >= 2 && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(5,5,10,0.8)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 100,
+                        backdropFilter: 'blur(4px)'
+                    }}>
+                        <Card style={{ textAlign: 'center', maxWidth: 300 }}>
+                            <h3 style={{ marginBottom: 16 }}>Test terminé !</h3>
+                            <p style={{ marginBottom: 24, color: 'var(--text-secondary)' }}>
+                                Vous avez complété les tours d'essai. Prêt à commencer ?
+                            </p>
+                            <button className="btn btn-primary" onClick={() => setPhase('countdown')} style={{ width: '100%' }}>
+                                Démarrer la session
+                            </button>
+                        </Card>
+                    </div>
+                )}
             </div>
             {phase === 'countdown' && (
                 <CountdownOverlay count={3} onComplete={() => setPhase('playing')} />
