@@ -212,11 +212,11 @@ export const HUMAN_AI_DATA: HumanAiData[] = [
 ];
 
 export const CAUSAL_DATA: CausalData[] = [
-    { event: "Cycle de la Découverte", steps: ["Curiosité", "Questionnement", "Recherche", "Découverte brute", "Nouvelle Idée"] },
-    { event: "Cascade Systémique", steps: ["Gravité", "Saturation du sol", "Éboulement", "Barrage rompt", "Inondation"] },
-    { event: "Cercle de l'Apprentissage", steps: ["Effort physique", "Signal neurologique", "Fatigue", "Repos réparateur", "Maîtrise accrue"] },
-    { event: "Logique de Résolution", steps: ["Problème", "Analyse", "Hypothèse", "Test expérimental", "Solution validée"] },
-    { event: "Érosion Côtière", steps: ["Vagues répétées", "Retrait du sable", "Pente instable", "Effondrement", "Recul du trait de côte"] }
+    { event: "Construction d'une Maison", steps: ["Fondations", "Murs", "Charpente", "Toiture", "Finition"] },
+    { event: "Préparation d'un Repas", steps: ["Faim", "Choix des ingrédients", "Cuisine", "Dressage", "Dégustation"] },
+    { event: "Processus d'Apprentissage", steps: ["Incompréhension", "Effort", "Pratique", "Compréhension", "Maîtrise"] },
+    { event: "Cycle d'un Projet", steps: ["Idée", "Planification", "Action", "Finalisation", "Résultat"] },
+    { event: "Logique d'un Voyage", steps: ["Destination", "Bagages", "Départ", "Trajet", "Arrivée"] }
 ];
 
 export const SYNTAX_DATA: SyntaxData[] = [
