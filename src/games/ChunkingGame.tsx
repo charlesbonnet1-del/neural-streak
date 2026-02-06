@@ -13,28 +13,34 @@ interface ChunkingGameProps {
     isActive: boolean;
 }
 
-const ChunkingGame: React.FC<ChunkingGameProps> = ({ onBack, onScore, isActive }) => {
+const ChunkingGame: React.FC<ChunkingGameProps> = ({ onScore, isActive }) => {
     const [phase, setPhase] = useState<'memorize' | 'recall'>('memorize');
     const [numbers, setNumbers] = useState<number[]>([]);
     const [chunks, setChunks] = useState<string[]>([]);
     const [options, setOptions] = useState<string[]>([]);
     const [level, setLevel] = useState(1);
-    const [lives, setLives] = useState(3);
-    const [timer, setTimer] = useState(0);
+    const [timer, setTimer] = useState(-1); // Start at -1 to avoid accidental trigger
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
 
     const genLevel = useCallback(() => {
         if (!isActive) return;
+
+        // Adaptive length and chunk size
+        // User wants more groups of fewer digits as difficulty increases.
         const len = 4 + level * 2;
         const nums = Array.from({ length: len }, () => Math.floor(Math.random() * 10));
-        const chunkSize = 2 + Math.floor(level / 2);
+
+        // Chunk size: starts at 3-4, then goes down to 2 for higher levels to create MORE chunks
+        const chunkSize = level > 5 ? 2 : level > 2 ? 3 : 4;
+
         const chunked: string[] = [];
         for (let i = 0; i < nums.length; i += chunkSize) {
             chunked.push(nums.slice(i, i + chunkSize).join(''));
         }
+
         setNumbers(nums);
         setChunks(chunked);
-        setTimer(3 + level);
+        setTimer(4 + Math.floor(level / 2));
         setPhase('memorize');
     }, [level, isActive]);
 
@@ -44,126 +50,142 @@ const ChunkingGame: React.FC<ChunkingGameProps> = ({ onBack, onScore, isActive }
         } else {
             setPhase('memorize');
             setLevel(1);
-            setLives(3);
             setNumbers([]);
             setChunks([]);
+            setTimer(-1);
         }
-    }, [isActive, genLevel]);
+    }, [isActive]);
 
     useEffect(() => {
         if (isActive && phase === 'memorize' && timer > 0) {
-            const t = setTimeout(() => setTimer((x: number) => x - 1), 1000);
+            const t = setTimeout(() => setTimer((x) => x - 1), 1000);
             return () => clearTimeout(t);
-        } else if (isActive && phase === 'memorize' && timer === 0) {
+        } else if (isActive && phase === 'memorize' && timer === 0 && numbers.length > 0) {
             const correct = numbers.join('');
-            const wrongs = [
-                numbers.slice().reverse().join(''),
-                numbers.map((n) => (n + 1) % 10).join(''),
-                shuffle([...numbers]).join(''),
-            ].filter((w) => w !== correct);
-            setOptions(shuffle([correct, ...wrongs.slice(0, 3)]));
+
+            // Generate very similar options
+            const generateWrong = () => {
+                const arr = [...numbers];
+                const idxToChange = Math.floor(Math.random() * arr.length);
+                arr[idxToChange] = (arr[idxToChange] + 1 + Math.floor(Math.random() * 8)) % 10;
+                return arr.join('');
+            };
+
+            const wrongs = new Set<string>();
+            let attempts = 0;
+            while (wrongs.size < 3 && attempts < 20) {
+                const w = generateWrong();
+                if (w !== correct) wrongs.add(w);
+                attempts++;
+            }
+
+            setOptions(shuffle([correct, ...Array.from(wrongs)]));
             setPhase('recall');
         }
     }, [isActive, phase, timer, numbers]);
 
     const handleAnswer = (ans: string) => {
-        if (!isActive) return;
+        if (!isActive || feedback) return;
         const correct = numbers.join('');
+
         if (ans === correct) {
+            onScore(level * 25);
             setFeedback('success');
-            onScore(level * 20);
             setTimeout(() => {
                 setFeedback(null);
-                setLevel((l: number) => l + 1);
-                if (isActive) genLevel();
-            }, 1000);
+                setLevel((l) => l + 1);
+                genLevel();
+            }, 800);
         } else {
             setFeedback('error');
-            setLives((l: number) => l - 1);
             setTimeout(() => {
                 setFeedback(null);
-                if (isActive) genLevel();
-            }, 1000);
+                genLevel(); // Restart same level
+            }, 800);
         }
     };
 
     if (!isActive) return null;
 
+    const flashClass = feedback === 'success' ? 'flash-success' : feedback === 'error' ? 'flash-error' : '';
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div
+            className={`fadeIn ${flashClass}`}
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 20,
+                transition: 'background-color 0.3s ease'
+            }}
+        >
             <div style={{ position: 'absolute', top: 20, right: 20 }}>
-                <Stat label="NIVEAU" value={level} color="var(--cyan)" />
+                <Stat label="NIVEAU" value={level} color="var(--blue)" />
             </div>
+
             {phase === 'memorize' && (
-                <>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+                <div style={{ textAlign: 'center', width: '100%' }}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: '0.95rem' }}>
                         Mémorise cette séquence :
                     </p>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: 32 }}>
                         {chunks.map((ch, i) => (
                             <div
                                 key={i}
                                 className="glass"
-                                style={{ padding: '14px 18px', borderRadius: 'var(--radius-md)' }}
+                                style={{
+                                    padding: '12px 20px',
+                                    borderRadius: 'var(--radius-md)',
+                                    minWidth: 60,
+                                    textAlign: 'center'
+                                }}
                             >
-                                <span
-                                    style={{
-                                        fontFamily: 'var(--font-mono)',
-                                        fontSize: '1.4rem',
-                                        fontWeight: 700,
-                                        color: 'var(--cyan)',
-                                    }}
-                                >
+                                <span style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '1.5rem',
+                                    fontWeight: 700,
+                                    color: 'var(--text-primary)'
+                                }}>
                                     {ch}
                                 </span>
                             </div>
                         ))}
                     </div>
-                    <div className="progress-bar-container" style={{ width: '100%', maxWidth: 300, height: 6, marginBottom: 16 }}>
+                    <div className="progress-bar" style={{ width: '100%', maxWidth: 200, margin: '0 auto 16px' }}>
                         <div
-                            className="progress-bar-fill"
+                            className="progress-fill"
                             style={{
-                                width: `${(timer / (3 + level)) * 100}%`,
-                                background: 'var(--cyan)',
+                                width: `${(timer / (4 + Math.floor(level / 2))) * 100}%`,
+                                background: 'var(--blue)',
                                 transition: 'width 1s linear'
                             }}
                         />
                     </div>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                        💡 Regroupe en chunks pour mieux mémoriser
-                    </p>
-                </>
+                </div>
             )}
+
             {phase === 'recall' && (
-                <>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+                <div style={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
                         Quelle était la séquence ?
                     </p>
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 10,
-                            width: '100%',
-                            maxWidth: 360,
-                        }}
-                    >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {options.map((opt, i) => (
                             <OptionBtn
                                 key={i}
                                 onClick={() => handleAnswer(opt)}
                                 disabled={!!feedback}
-                                correct={feedback && opt === numbers.join('')}
+                                correct={feedback === 'success' && opt === numbers.join('')}
                                 wrong={feedback === 'error' && opt !== numbers.join('')}
                             >
-                                <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: 2 }}>{opt}</span>
+                                <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: 3, fontWeight: 600 }}>{opt}</span>
                             </OptionBtn>
                         ))}
                     </div>
-                </>
-            )}
-            {feedback && (
-                <Feedback type={feedback} message={feedback === 'success' ? 'Exact !' : 'Incorrect !'} />
+                </div>
             )}
         </div>
     );
