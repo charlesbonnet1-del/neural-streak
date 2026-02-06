@@ -6,7 +6,6 @@ import { Category } from '../types';
 
 interface HomeProps {
     onSelectGame: (gameId: string) => void;
-    onViewLeaderboard: () => void;
     onLogin: () => void;
     userStats: {
         streak: number;
@@ -16,7 +15,7 @@ interface HomeProps {
 }
 
 
-const Home: React.FC<HomeProps> = ({ onSelectGame, onViewLeaderboard, onLogin, userStats, isLoggedIn }) => {
+const Home: React.FC<HomeProps> = ({ onSelectGame, onLogin, userStats, isLoggedIn }) => {
 
     return (
         <div style={{ padding: '40px 20px', maxWidth: 600, margin: '0 auto' }}>
@@ -41,12 +40,9 @@ const Home: React.FC<HomeProps> = ({ onSelectGame, onViewLeaderboard, onLogin, u
                 </Card>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginBottom: 32 }} className="fadeIn">
-                <button onClick={onViewLeaderboard} className="btn btn-secondary" style={{ flex: 1, padding: '12px' }}>
-                    🏆 Leaderboard
-                </button>
+            <div style={{ marginBottom: 32, textAlign: 'center' }} className="fadeIn">
                 {!isLoggedIn && (
-                    <button onClick={onLogin} className="btn btn-primary" style={{ flex: 1, padding: '12px' }}>
+                    <button onClick={onLogin} className="btn btn-primary" style={{ width: '100%', padding: '12px' }}>
                         👤 Connexion
                     </button>
                 )}

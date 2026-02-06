@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Home from './components/Home';
-import Leaderboard from './components/Leaderboard';
 import { useAuth } from './context/AuthContext';
 import { ProgressionProvider } from './context/ProgressionContext';
 import GameContainer from './components/GameContainer';
@@ -27,7 +26,7 @@ import FocusGame from './games/FocusGame';
 
 const App: React.FC = () => {
     const [currentGame, setCurrentGame] = useState<string | null>(null);
-    const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const [currentGame, setCurrentGame] = useState<string | null>(null);
     const { user, login } = useAuth();
     const [userStats, setUserStats] = useState({ streak: 0, totalScore: 0 });
 
@@ -85,9 +84,7 @@ const App: React.FC = () => {
         );
     };
 
-    if (isLeaderboardOpen) {
-        return <Leaderboard onBack={() => setIsLeaderboardOpen(false)} />;
-    }
+
 
     return (
         <ProgressionProvider>
@@ -98,7 +95,6 @@ const App: React.FC = () => {
                         <Home
                             userStats={userStats}
                             onSelectGame={setCurrentGame}
-                            onViewLeaderboard={() => setIsLeaderboardOpen(true)}
                             onLogin={login}
                             isLoggedIn={!!user}
                         />

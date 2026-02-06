@@ -19,7 +19,7 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
     const [userSeq, setUserSeq] = useState<Color[]>([]);
     const [level, setLevel] = useState(1);
     const [showIdx, setShowIdx] = useState(-1);
-    const [lives, setLives] = useState(3);
+    const [clickIdx, setClickIdx] = useState<Color | null>(null);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
 
     const startLevel = useCallback(async () => {
@@ -51,25 +51,30 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
         if (!isActive) {
             setPhase('ready');
             setLevel(1);
-            setLives(3);
             setUserSeq([]);
             setSequence([]);
         }
     }, [isActive]);
 
-    const handleClick = (color: Color) => {
-        if (phase !== 'input' || !isActive) return;
+    const handleClick = async (color: Color) => {
+        if (phase !== 'input' || !isActive || feedback) return;
+
+        // Visual feedback for click
+        setClickIdx(color);
+        setTimeout(() => setClickIdx(null), 150);
+
         const newSeq = [...userSeq, color];
         setUserSeq(newSeq);
+
         if (newSeq[newSeq.length - 1] !== sequence[newSeq.length - 1]) {
             setFeedback('error');
-            setLives((l: number) => l - 1);
             setTimeout(() => {
                 setFeedback(null);
                 if (isActive) setPhase('ready');
             }, 1000);
             return;
         }
+
         if (newSeq.length === sequence.length) {
             setFeedback('success');
             onScore(level * 15);
@@ -97,25 +102,30 @@ const SequenceGame: React.FC<SequenceGameProps> = ({ onBack, onScore, isActive }
                 className={feedback === 'error' ? 'shake' : ''}
                 style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}
             >
-                {COLORS.map((c) => (
-                    <button
-                        key={c}
-                        onClick={() => handleClick(c)}
-                        disabled={phase !== 'input'}
-                        style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: 'var(--radius-md)',
-                            border: 'none',
-                            background: COLOR_HEX[c],
-                            cursor: phase === 'input' ? 'pointer' : 'default',
-                            opacity: phase === 'showing' && showIdx >= 0 && sequence[showIdx] !== c ? 0.3 : 1,
-                            transform: sequence[showIdx] === c ? 'scale(1.15)' : 'scale(1)',
-                            boxShadow: sequence[showIdx] === c ? `0 0 30px ${COLOR_HEX[c]}` : 'none',
-                            transition: 'all 0.15s ease',
-                        }}
-                    />
-                ))}
+                {COLORS.map((c) => {
+                    const isShowing = sequence[showIdx] === c;
+                    const isClicking = clickIdx === c;
+                    return (
+                        <button
+                            key={c}
+                            onClick={() => handleClick(c)}
+                            disabled={phase !== 'input' || !!feedback}
+                            style={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: 'var(--radius-md)',
+                                border: 'none',
+                                background: COLOR_HEX[c],
+                                cursor: phase === 'input' && !feedback ? 'pointer' : 'default',
+                                opacity: phase === 'showing' && showIdx >= 0 && sequence[showIdx] !== c ? 0.3 : 1,
+                                transform: isShowing || isClicking ? 'scale(1.15)' : 'scale(1)',
+                                boxShadow: isShowing || isClicking ? `0 0 30px ${COLOR_HEX[c]}` : 'none',
+                                transition: 'all 0.1s ease',
+                                filter: isClicking ? 'brightness(1.5)' : 'none',
+                            }}
+                        />
+                    );
+                })}
             </div>
             {feedback && <Feedback type={feedback} message={feedback === 'success' ? 'Parfait !' : 'Raté !'} />}
         </div>
