@@ -20,8 +20,8 @@ interface CloudWord {
     y: number;
     size: number;
     rotation: number;
-    duration: number;
     delay: number;
+    duration: number;
 }
 
 const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
@@ -35,18 +35,22 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
     const [cloudWords, setCloudWords] = useState<CloudWord[]>([]);
 
     const generateCloud = useCallback(() => {
-        const cloudSize = 40; // High density
-        const wordsFromData = pickN(RECALL_WORDS, cloudSize);
+        const cloudSize = 70; // Even more density for complete saturation
+        const wordsFromData = pickN(RECALL_WORDS, Math.min(cloudSize, RECALL_WORDS.length));
+
+        while (wordsFromData.length < cloudSize) {
+            wordsFromData.push(...pickN(RECALL_WORDS, cloudSize - wordsFromData.length));
+        }
 
         const words: CloudWord[] = wordsFromData.map((word, i) => ({
             text: word,
             id: `cloud-${i}-${word}-${Math.random()}`,
-            x: Math.random() * 90 + 5,
-            y: Math.random() * 90 + 5,
-            size: Math.random() * 1.8 + 0.6,
-            rotation: Math.random() * 40 - 20,
-            duration: Math.random() * 1.5 + 0.5,
-            delay: Math.random() * 1.2
+            x: Math.random() * 92 + 4,
+            y: Math.random() * 92 + 4,
+            size: Math.random() * 1.6 + 0.5,
+            rotation: Math.random() * 60 - 30,
+            delay: Math.random() * 0.5,
+            duration: Math.random() * 0.4 + 0.1 // Very fast flicker
         }));
         setCloudWords(words);
     }, []);
@@ -64,7 +68,7 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
         setTargets(newTargets);
         setOptions(shuffle([...newTargets, ...distractors]));
         setSelected([]);
-        setTimer(4); // Slightly shorter memorize phase for speed
+        setTimer(4);
         setPhase('memorize');
         setFeedback(null);
     }, [level, isActive]);
@@ -91,7 +95,7 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
         if (timer === 0) {
             if (phase === 'memorize') {
                 generateCloud();
-                setTimer(2); // Short, intense distraction
+                setTimer(2); // Intense 2s distraction
                 setPhase('distract');
             } else if (phase === 'distract') {
                 setPhase('recall');
@@ -146,8 +150,7 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
                 justifyContent: 'center',
                 padding: 24,
                 transition: 'background-color 0.4s ease',
-                position: 'relative',
-                background: phase === 'distract' ? 'rgba(255,255,255,0.95)' : 'transparent'
+                position: 'relative'
             }}
         >
             <div style={{ position: 'absolute', top: 20, right: 20 }}>
@@ -202,39 +205,43 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
                 )}
 
                 {phase === 'distract' && (
-                    <div style={{ width: '100%', height: '60vh', position: 'fixed', top: 0, left: 0, zIndex: 500, overflow: 'hidden' }}>
-                        <AnimatePresence>
-                            {cloudWords.map(w => (
-                                <motion.div
-                                    key={w.id}
-                                    initial={{ scale: 0, opacity: 0, x: `${w.x}vw`, y: `${w.y}vh`, rotate: w.rotation }}
-                                    animate={{
-                                        scale: [0, 1.2, 1],
-                                        opacity: [0, 1, 0.8],
-                                        y: [`${w.y}vh`, `${w.y - 10}vh`]
-                                    }}
-                                    transition={{ duration: w.duration, delay: w.delay }}
-                                    style={{
-                                        position: 'absolute',
-                                        fontSize: `${w.size}rem`, fontWeight: 900,
-                                        color: 'var(--text-primary)',
-                                        opacity: 0.3,
-                                        whiteSpace: 'nowrap',
-                                        pointerEvents: 'none',
-                                        filter: 'blur(0.5px)'
-                                    }}
-                                >
-                                    {w.text}
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                        <motion.div
-                            animate={{ opacity: [0.2, 0.5, 0.2] }}
-                            transition={{ duration: 0.5, repeat: Infinity }}
-                            style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '3rem', fontWeight: 900, color: 'var(--purple)', zIndex: 600 }}
-                        >
+                    <div style={{ width: '100%', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 1000, backgroundColor: 'white', overflow: 'hidden' }}>
+                        {cloudWords.map(w => (
+                            <motion.div
+                                key={w.id}
+                                initial={{ opacity: 0 }}
+                                animate={{
+                                    opacity: [0, 0.8, 0, 0.6, 0]
+                                }}
+                                transition={{
+                                    duration: w.duration,
+                                    delay: w.delay,
+                                    repeat: Infinity,
+                                    repeatType: "mirror"
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    left: `${w.x}%`,
+                                    top: `${w.y}%`,
+                                    fontSize: `${w.size}rem`,
+                                    fontWeight: 900,
+                                    color: 'var(--text-primary)',
+                                    transform: `rotate(${w.rotation}deg)`,
+                                    pointerEvents: 'none',
+                                    whiteSpace: 'nowrap',
+                                    filter: 'blur(0.2px)'
+                                }}
+                            >
+                                {w.text}
+                            </motion.div>
+                        ))}
+                        <div style={{
+                            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                            fontSize: '4rem', fontWeight: 900, color: 'var(--purple)', zIndex: 1100,
+                            textShadow: '0 0 40px rgba(255,255,255,1)'
+                        }}>
                             DISTRACTION
-                        </motion.div>
+                        </div>
                     </div>
                 )}
 
