@@ -9,21 +9,22 @@ import { UchroniaData } from '../types';
 
 interface UchroniaGameProps {
     onBack: () => void;
+    onScore: (score: number) => void;
+    isActive: boolean;
 }
 
-const UchroniaGame: React.FC<UchroniaGameProps> = ({ onBack }) => {
-    const [phase, setPhase] = useState<'playing' | 'result'>('playing');
+const UchroniaGame: React.FC<UchroniaGameProps> = ({ onBack, onScore, isActive }) => {
     const [current, setCurrent] = useState<UchroniaData | null>(null);
     const [options, setOptions] = useState<string[]>([]);
     const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
     const [round, setRound] = useState(0);
-    const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
     const [used, setUsed] = useState<number[]>([]);
     const maxRounds = 6;
 
     const next = useCallback(() => {
+        if (!isActive) return;
         const avail = UCHRONIA_DATA.map((_, i) => i).filter((i) => !used.includes(i));
         if (avail.length === 0) {
             setUsed([]);
@@ -34,75 +35,56 @@ const UchroniaGame: React.FC<UchroniaGameProps> = ({ onBack }) => {
             return;
         }
         const idx = pick(avail);
-        setUsed((p) => [...p, idx]);
+        setUsed((p: number[]) => [...p, idx]);
         const item = UCHRONIA_DATA[idx];
         setCurrent(item);
         setOptions(shuffle([...item.consequences, item.absurd]));
         setSelectedIdx(null);
         setFeedback(null);
-    }, [used]);
+    }, [used, isActive]);
 
     useEffect(() => {
-        next();
-    }, []);
+        if (isActive) {
+            next();
+        } else {
+            setRound(0);
+            setLives(3);
+            setUsed([]);
+            setCurrent(null);
+            setOptions([]);
+            setSelectedIdx(null);
+            setFeedback(null);
+        }
+    }, [isActive, next]);
 
     const handleSelect = (idx: number) => {
-        if (feedback || !current) return;
+        if (!isActive || feedback || !current) return;
         setSelectedIdx(idx);
         const selectedOption = options[idx];
         const isCorrect = selectedOption === current.absurd;
 
         if (isCorrect) {
             setFeedback('success');
-            setScore((s) => s + 40);
+            onScore(40);
+            setTimeout(() => {
+                setRound((r: number) => r + 1);
+                if (isActive) next();
+            }, 1200);
         } else {
             setFeedback('error');
-            setLives((l) => l - 1);
-        }
-
-        if (lives <= 1 && !isCorrect) {
-            setTimeout(() => setPhase('result'), 1200);
-        } else {
+            setLives((l: number) => l - 1);
             setTimeout(() => {
-                if (round + 1 >= maxRounds) setPhase('result');
-                else {
-                    setRound((r) => r + 1);
-                    next();
-                }
+                setRound((r: number) => r + 1);
+                if (isActive) next();
             }, 1200);
         }
     };
 
-    if (phase === 'result') {
-        return (
-            <ResultScreen
-                score={score}
-                maxScore={maxRounds * 40}
-                stats={{ 'Uchronies': `${round}/${maxRounds}` }}
-                onRetry={() => {
-                    setRound(0);
-                    setScore(0);
-                    setLives(3);
-                    setUsed([]);
-                    next();
-                    setPhase('playing');
-                }}
-                onBack={onBack}
-            />
-        );
-    }
+    if (!isActive) return null;
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Header
-                title="Et si... ?"
-                subtitle="Identifie l'absurde"
-                onBack={onBack}
-                lives={lives}
-                score={score}
-                progress={(round / maxRounds) * 100}
-            />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 600 }}>
                 {current && (
                     <>
                         <Card style={{ textAlign: 'center' }}>

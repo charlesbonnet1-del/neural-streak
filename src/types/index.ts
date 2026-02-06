@@ -14,6 +14,8 @@ export interface GameInfo {
     name: string;
     desc: string;
     icon: string;
+    tutorial: string;
+    categoryId: string;
 }
 
 export interface HallucinationData {

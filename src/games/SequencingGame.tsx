@@ -9,21 +9,22 @@ import { SequenceData } from '../types';
 
 interface SequencingGameProps {
     onBack: () => void;
+    onScore: (score: number) => void;
+    isActive: boolean;
 }
 
-const SequencingGame: React.FC<SequencingGameProps> = ({ onBack }) => {
-    const [phase, setPhase] = useState<'playing' | 'result'>('playing');
+const SequencingGame: React.FC<SequencingGameProps> = ({ onBack, onScore, isActive }) => {
     const [current, setCurrent] = useState<SequenceData | null>(null);
     const [shuffledSteps, setShuffledSteps] = useState<string[]>([]);
     const [selected, setSelected] = useState<string[]>([]);
     const [round, setRound] = useState(0);
-    const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
     const [used, setUsed] = useState<number[]>([]);
     const maxRounds = 6;
 
     const next = useCallback(() => {
+        if (!isActive) return;
         const avail = SEQUENCE_DATA.map((_, i) => i).filter((i) => !used.includes(i));
         if (avail.length === 0) {
             setUsed([]);
@@ -34,85 +35,66 @@ const SequencingGame: React.FC<SequencingGameProps> = ({ onBack }) => {
             return;
         }
         const idx = pick(avail);
-        setUsed((p) => [...p, idx]);
+        setUsed((p: number[]) => [...p, idx]);
         const item = SEQUENCE_DATA[idx];
         setCurrent(item);
         setShuffledSteps(shuffle([...item.steps]));
         setSelected([]);
         setFeedback(null);
-    }, [used]);
+    }, [used, isActive]);
 
     useEffect(() => {
-        next();
-    }, []);
+        if (isActive) {
+            next();
+        } else {
+            setRound(0);
+            setLives(3);
+            setUsed([]);
+            setCurrent(null);
+            setShuffledSteps([]);
+            setSelected([]);
+            setFeedback(null);
+        }
+    }, [isActive, next]);
 
     const handleStepClick = (step: string) => {
-        if (feedback) return;
+        if (!isActive || feedback) return;
         if (selected.includes(step)) return;
         setSelected([...selected, step]);
     };
 
     const validateSequence = () => {
-        if (!current) return;
+        if (!isActive || !current) return;
         const isCorrect = selected.every((step, i) => step === current.steps[i]);
 
         if (isCorrect) {
             setFeedback('success');
-            setScore((s) => s + 50);
+            onScore(50);
             setTimeout(() => {
-                if (round + 1 >= maxRounds) setPhase('result');
-                else {
-                    setRound((r) => r + 1);
-                    next();
-                }
+                setRound((r: number) => r + 1);
+                if (isActive) next();
             }, 1200);
         } else {
             setFeedback('error');
-            setLives((l) => l - 1);
-            if (lives <= 1) setTimeout(() => setPhase('result'), 1200);
-            else
-                setTimeout(() => {
-                    setRound((r) => r + 1);
-                    next();
-                }, 1500);
+            setLives((l: number) => l - 1);
+            setTimeout(() => {
+                setRound((r: number) => r + 1);
+                if (isActive) next();
+            }, 1500);
         }
     };
 
     const reset = () => {
+        if (!isActive) return;
         setSelected([]);
         setFeedback(null);
     };
 
-    if (phase === 'result') {
-        return (
-            <ResultScreen
-                score={score}
-                maxScore={maxRounds * 50}
-                stats={{ 'Séquences': `${round}/${maxRounds}` }}
-                onRetry={() => {
-                    setRound(0);
-                    setScore(0);
-                    setLives(3);
-                    setUsed([]);
-                    next();
-                    setPhase('playing');
-                }}
-                onBack={onBack}
-            />
-        );
-    }
+    if (!isActive) return null;
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Header
-                title="Remets dans l'ordre"
-                subtitle="Ordonne les étapes logiques"
-                onBack={onBack}
-                lives={lives}
-                score={score}
-                progress={(round / maxRounds) * 100}
-            />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 600 }}>
                 {current && (
                     <>
                         <Card style={{ textAlign: 'center' }}>

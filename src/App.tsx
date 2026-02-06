@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Home from './components/Home';
 import Leaderboard from './components/Leaderboard';
 import { useAuth } from './context/AuthContext';
+import { ProgressionProvider } from './context/ProgressionContext';
+import GameContainer from './components/GameContainer';
 import SequenceGame from './games/SequenceGame';
 import NBackGame from './games/NBackGame';
 import ChunkingGame from './games/ChunkingGame';
@@ -35,69 +37,52 @@ const App: React.FC = () => {
     }, [currentGame, user]);
 
     const renderGame = () => {
-        switch (currentGame) {
-            case 'sequence':
-                return <SequenceGame onBack={() => setCurrentGame(null)} />;
-            case 'nback':
-                return <NBackGame onBack={() => setCurrentGame(null)} />;
-            case 'chunking':
-                return <ChunkingGame onBack={() => setCurrentGame(null)} />;
-            case 'updating':
-                return <UpdatingGame onBack={() => setCurrentGame(null)} />;
-            case 'hallucination':
-                return <HallucinationGame onBack={() => setCurrentGame(null)} />;
-            case 'fallacy':
-                return <FallacyGame onBack={() => setCurrentGame(null)} />;
-            case 'trilemma':
-                return <TrilemmaGame onBack={() => setCurrentGame(null)} />;
-            case 'humanai':
-                return <HumanAiGame onBack={() => setCurrentGame(null)} />;
-            case 'causal':
-                return <CausalGame onBack={() => setCurrentGame(null)} />;
-            case 'recall':
-                return <RecallGame onBack={() => setCurrentGame(null)} />;
-            case 'constraints':
-                return <ConstraintsGame onBack={() => setCurrentGame(null)} />;
-            case 'syntax':
-                return <SyntaxGame onBack={() => setCurrentGame(null)} />;
-            case 'cliche':
-                return <ClicheGame onBack={() => setCurrentGame(null)} />;
-            case 'metaphor':
-                return <MetaphorGame onBack={() => setCurrentGame(null)} />;
-            case 'sequencing':
-                return <SequencingGame onBack={() => setCurrentGame(null)} />;
-            case 'resources':
-                return <ResourcesGame onBack={() => setCurrentGame(null)} />;
-            case 'associations':
-                return <AssociationsGame onBack={() => setCurrentGame(null)} />;
-            case 'uchronia':
-                return <UchroniaGame onBack={() => setCurrentGame(null)} />;
-            case 'reaction':
-                return <ReactionGame onBack={() => setCurrentGame(null)} />;
-            case 'focus':
-                return <FocusGame onBack={() => setCurrentGame(null)} />;
-            default:
-                return (
-                    <div
-                        style={{
-                            padding: '40px 20px',
-                            textAlign: 'center',
-                            color: 'var(--text-secondary)',
-                            marginTop: 100,
-                        }}
-                    >
-                        Ce jeu ({currentGame}) est en cours de développement...
-                        <br />
-                        <button
-                            onClick={() => setCurrentGame(null)}
-                            className="btn btn-secondary"
-                            style={{ marginTop: 20 }}
-                        >
-                            Retour
-                        </button>
-                    </div>
-                );
+        if (!currentGame) return null;
+
+        const components: Record<string, React.FC<any>> = {
+            sequence: SequenceGame,
+            nback: NBackGame,
+            chunking: ChunkingGame,
+            updating: UpdatingGame,
+            hallucination: HallucinationGame,
+            fallacy: FallacyGame,
+            trilemma: TrilemmaGame,
+            humanai: HumanAiGame,
+            causal: CausalGame,
+            recall: RecallGame,
+            constraints: ConstraintsGame,
+            syntax: SyntaxGame,
+            cliche: ClicheGame,
+            metaphor: MetaphorGame,
+            sequencing: SequencingGame,
+            resources: ResourcesGame,
+            associations: AssociationsGame,
+            uchronia: UchroniaGame,
+            reaction: ReactionGame,
+            focus: FocusGame,
+        };
+
+        const GameComponent = components[currentGame];
+
+        if (!GameComponent) {
+            return (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)', marginTop: 100 }}>
+                    Ce jeu ({currentGame}) est en cours de développement...
+                    <br />
+                    <button onClick={() => setCurrentGame(null)} className="btn btn-secondary" style={{ marginTop: 20 }}>
+                        Retour
+                    </button>
+                </div>
+            );
         }
+
+        return (
+            <GameContainer gameId={currentGame} onBack={() => setCurrentGame(null)}>
+                {({ onScore, isActive }: { onScore: (s: number) => void; isActive: boolean }) => (
+                    <GameComponent onScore={onScore} isActive={isActive} onBack={() => setCurrentGame(null)} />
+                )}
+            </GameContainer>
+        );
     };
 
     if (isLeaderboardOpen) {
@@ -105,24 +90,25 @@ const App: React.FC = () => {
     }
 
     return (
-        <div className="app-container">
-            <div className="grid-bg"></div>
-            <main style={{ position: 'relative', zIndex: 1 }}>
-                {!currentGame ? (
-                    <Home
-                        userStats={userStats}
-                        onSelectGame={setCurrentGame}
-                        onViewLeaderboard={() => setIsLeaderboardOpen(true)}
-                        onLogin={login}
-                        isLoggedIn={!!user}
-                    />
-                ) : (
-                    renderGame()
-                )}
-            </main>
-        </div>
+        <ProgressionProvider>
+            <div className="app-container">
+                <div className="grid-bg"></div>
+                <main style={{ position: 'relative', zIndex: 1 }}>
+                    {!currentGame ? (
+                        <Home
+                            userStats={userStats}
+                            onSelectGame={setCurrentGame}
+                            onViewLeaderboard={() => setIsLeaderboardOpen(true)}
+                            onLogin={login}
+                            isLoggedIn={!!user}
+                        />
+                    ) : (
+                        renderGame()
+                    )}
+                </main>
+            </div>
+        </ProgressionProvider>
     );
 };
 
 export default App;
-

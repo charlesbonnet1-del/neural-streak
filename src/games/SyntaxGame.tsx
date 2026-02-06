@@ -9,21 +9,22 @@ import { SyntaxData } from '../types';
 
 interface SyntaxGameProps {
     onBack: () => void;
+    onScore: (score: number) => void;
+    isActive: boolean;
 }
 
-const SyntaxGame: React.FC<SyntaxGameProps> = ({ onBack }) => {
-    const [phase, setPhase] = useState<'playing' | 'result'>('playing');
+const SyntaxGame: React.FC<SyntaxGameProps> = ({ onBack, onScore, isActive }) => {
     const [current, setCurrent] = useState<SyntaxData | null>(null);
     const [shuffledFragments, setShuffledFragments] = useState<{ text: string; originalIdx: number }[]>([]);
     const [selected, setSelected] = useState<number[]>([]);
     const [round, setRound] = useState(0);
-    const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
     const [used, setUsed] = useState<number[]>([]);
     const maxRounds = 6;
 
     const next = useCallback(() => {
+        if (!isActive) return;
         const avail = SYNTAX_DATA.map((_, i) => i).filter((i) => !used.includes(i));
         if (avail.length === 0) {
             setUsed([]);
@@ -37,7 +38,7 @@ const SyntaxGame: React.FC<SyntaxGameProps> = ({ onBack }) => {
             return;
         }
         const idx = pick(avail);
-        setUsed((p) => [...p, idx]);
+        setUsed((p: number[]) => [...p, idx]);
         const item = SYNTAX_DATA[idx];
         setCurrent(item);
         setShuffledFragments(
@@ -45,14 +46,24 @@ const SyntaxGame: React.FC<SyntaxGameProps> = ({ onBack }) => {
         );
         setSelected([]);
         setFeedback(null);
-    }, [used]);
+    }, [used, isActive]);
 
     useEffect(() => {
-        next();
-    }, []);
+        if (isActive) {
+            next();
+        } else {
+            setRound(0);
+            setLives(3);
+            setUsed([]);
+            setCurrent(null);
+            setShuffledFragments([]);
+            setSelected([]);
+            setFeedback(null);
+        }
+    }, [isActive, next]);
 
     const handleFragmentClick = (originalIdx: number) => {
-        if (feedback) return;
+        if (!isActive || feedback) return;
         if (selected.includes(originalIdx)) {
             setSelected(selected.filter((i) => i !== originalIdx));
         } else {
@@ -61,67 +72,38 @@ const SyntaxGame: React.FC<SyntaxGameProps> = ({ onBack }) => {
     };
 
     const validateSentence = () => {
-        if (!current) return;
+        if (!isActive || !current) return;
         const isCorrect = selected.every((idx, i) => idx === current.correct[i]) &&
             selected.length === current.correct.length;
 
         if (isCorrect) {
             setFeedback('success');
-            setScore((s) => s + 40);
+            onScore(40);
             setTimeout(() => {
-                if (round + 1 >= maxRounds) setPhase('result');
-                else {
-                    setRound((r) => r + 1);
-                    next();
-                }
+                setRound((r: number) => r + 1);
+                if (isActive) next();
             }, 1200);
         } else {
             setFeedback('error');
-            setLives((l) => l - 1);
-            if (lives <= 1) setTimeout(() => setPhase('result'), 1000);
-            else
-                setTimeout(() => {
-                    setRound((r) => r + 1);
-                    next();
-                }, 1500);
+            setLives((l: number) => l - 1);
+            setTimeout(() => {
+                setRound((r: number) => r + 1);
+                if (isActive) next();
+            }, 1500);
         }
     };
 
     const reset = () => {
+        if (!isActive) return;
         setSelected([]);
         setFeedback(null);
     };
 
-    if (phase === 'result') {
-        return (
-            <ResultScreen
-                score={score}
-                maxScore={maxRounds * 40}
-                stats={{ 'Phrases': `${round}/${maxRounds}` }}
-                onRetry={() => {
-                    setRound(0);
-                    setScore(0);
-                    setLives(3);
-                    setUsed([]);
-                    next();
-                    setPhase('playing');
-                }}
-                onBack={onBack}
-            />
-        );
-    }
+    if (!isActive) return null;
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Header
-                title="Puzzle Syntaxique"
-                subtitle="Reconstruis la phrase"
-                onBack={onBack}
-                lives={lives}
-                score={score}
-                progress={(round / maxRounds) * 100}
-            />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 600 }}>
                 {current && (
                     <>
                         <Card>
@@ -163,15 +145,15 @@ const SyntaxGame: React.FC<SyntaxGameProps> = ({ onBack }) => {
 
                         <div style={{ marginTop: 24 }}>
                             <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: 16 }}>
-                                Clique dans le bon ordre :
+                                Cliquez dans le bon ordre :
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
                                 {shuffledFragments.map((frag) => (
                                     <button
                                         key={frag.originalIdx}
                                         className={`btn ${selected.includes(frag.originalIdx)
-                                                ? 'btn-primary'
-                                                : 'btn-secondary'
+                                            ? 'btn-primary'
+                                            : 'btn-secondary'
                                             }`}
                                         onClick={() => handleFragmentClick(frag.originalIdx)}
                                         disabled={!!feedback || selected.includes(frag.originalIdx)}

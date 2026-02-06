@@ -8,18 +8,19 @@ import { AssociationData } from '../types';
 
 interface AssociationsGameProps {
     onBack: () => void;
+    onScore: (score: number) => void;
+    isActive: boolean;
 }
 
-const AssociationsGame: React.FC<AssociationsGameProps> = ({ onBack }) => {
-    const [phase, setPhase] = useState<'playing' | 'result'>('playing');
+const AssociationsGame: React.FC<AssociationsGameProps> = ({ onBack, onScore, isActive }) => {
     const [current, setCurrent] = useState<AssociationData | null>(null);
     const [selectedLink, setSelectedLink] = useState<string | null>(null);
     const [round, setRound] = useState(0);
-    const [score, setScore] = useState(0);
     const [used, setUsed] = useState<number[]>([]);
     const maxRounds = 8;
 
     const next = useCallback(() => {
+        if (!isActive) return;
         const avail = ASSOCIATION_DATA.map((_, i) => i).filter((i) => !used.includes(i));
         if (avail.length === 0) {
             setUsed([]);
@@ -28,116 +29,98 @@ const AssociationsGame: React.FC<AssociationsGameProps> = ({ onBack }) => {
             return;
         }
         const idx = pick(avail);
-        setUsed((p) => [...p, idx]);
+        setUsed((p: number[]) => [...p, idx]);
         setCurrent(ASSOCIATION_DATA[idx]);
         setSelectedLink(null);
-    }, [used]);
+    }, [used, isActive]);
 
     useEffect(() => {
-        next();
-    }, []);
+        if (isActive) {
+            next();
+        } else {
+            setRound(0);
+            setUsed([]);
+            setCurrent(null);
+            setSelectedLink(null);
+        }
+    }, [isActive, next]);
 
     const handleSelect = (link: string) => {
-        if (selectedLink) return;
+        if (!isActive || selectedLink) return;
         setSelectedLink(link);
         // All answers are valid in this creative game - it rewards participation
-        setScore((s) => s + 25);
+        onScore(25);
 
         setTimeout(() => {
-            if (round + 1 >= maxRounds) setPhase('result');
-            else {
-                setRound((r) => r + 1);
-                next();
-            }
+            setRound((r: number) => r + 1);
+            if (isActive) next();
         }, 1200);
     };
 
-    if (phase === 'result') {
-        return (
-            <ResultScreen
-                score={score}
-                maxScore={maxRounds * 25}
-                stats={{ 'Connexions': `${round}/${maxRounds}` }}
-                onRetry={() => {
-                    setRound(0);
-                    setScore(0);
-                    setUsed([]);
-                    next();
-                    setPhase('playing');
-                }}
-                onBack={onBack}
-            />
-        );
-    }
+    if (!isActive) return null;
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Header
-                title="Connexions Improbables"
-                subtitle="Trouve des liens créatifs"
-                onBack={onBack}
-                score={score}
-                progress={(round / maxRounds) * 100}
-            />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20 }}>
-                {current && (
-                    <>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            {current && (
+                <>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: 16,
+                            marginBottom: 24,
+                            width: '100%',
+                            maxWidth: 600
+                        }}
+                    >
+                        <Card style={{ flex: 1, textAlign: 'center', margin: 0 }}>
+                            <p style={{ fontSize: '1.3rem', fontWeight: 700 }}>{current.word1}</p>
+                        </Card>
+                        <span style={{ fontSize: '1.5rem' }}>🔗</span>
+                        <Card style={{ flex: 1, textAlign: 'center', margin: 0 }}>
+                            <p style={{ fontSize: '1.3rem', fontWeight: 700 }}>{current.word2}</p>
+                        </Card>
+                    </div>
+
+                    <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: 16 }}>
+                        Quel lien te semble le plus pertinent ?
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 500 }}>
+                        {current.links.map((link, idx) => (
+                            <button
+                                key={idx}
+                                className={`btn-option ${selectedLink === link ? 'correct' : ''}`}
+                                onClick={() => handleSelect(link)}
+                                disabled={!!selectedLink}
+                            >
+                                {link}
+                            </button>
+                        ))}
+                    </div>
+
+                    {selectedLink && (
                         <div
+                            className="scaleIn"
                             style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                gap: 16,
-                                marginBottom: 24,
+                                marginTop: 24,
+                                padding: 16,
+                                background: 'rgba(34,197,94,0.1)',
+                                borderRadius: 'var(--radius-md)',
+                                border: '2px solid var(--green)',
+                                textAlign: 'center',
+                                maxWidth: 500
                             }}
                         >
-                            <Card style={{ flex: 1, textAlign: 'center', margin: 0 }}>
-                                <p style={{ fontSize: '1.3rem', fontWeight: 700 }}>{current.word1}</p>
-                            </Card>
-                            <span style={{ fontSize: '1.5rem' }}>🔗</span>
-                            <Card style={{ flex: 1, textAlign: 'center', margin: 0 }}>
-                                <p style={{ fontSize: '1.3rem', fontWeight: 700 }}>{current.word2}</p>
-                            </Card>
+                            <span style={{ fontSize: '1.3rem' }}>💡</span>
+                            <p style={{ color: 'var(--green)', marginTop: 8 }}>
+                                Belle connexion ! La pensée latérale, ça s'entraîne.
+                            </p>
                         </div>
-
-                        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: 16 }}>
-                            Quel lien te semble le plus pertinent ?
-                        </p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            {current.links.map((link, idx) => (
-                                <button
-                                    key={idx}
-                                    className={`btn-option ${selectedLink === link ? 'correct' : ''}`}
-                                    onClick={() => handleSelect(link)}
-                                    disabled={!!selectedLink}
-                                >
-                                    {link}
-                                </button>
-                            ))}
-                        </div>
-
-                        {selectedLink && (
-                            <div
-                                className="scaleIn"
-                                style={{
-                                    marginTop: 20,
-                                    padding: 16,
-                                    background: 'rgba(34,197,94,0.1)',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '2px solid var(--green)',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                <span style={{ fontSize: '1.3rem' }}>💡</span>
-                                <p style={{ color: 'var(--green)', marginTop: 8 }}>
-                                    Belle connexion ! La pensée latérale, ça s'entraîne.
-                                </p>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };

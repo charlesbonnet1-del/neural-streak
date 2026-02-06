@@ -7,15 +7,16 @@ import { Color } from '../types';
 
 interface FocusGameProps {
     onBack: () => void;
+    onScore: (score: number) => void;
+    isActive: boolean;
 }
 
-const FocusGame: React.FC<FocusGameProps> = ({ onBack }) => {
-    const [phase, setPhase] = useState<'observe' | 'detect' | 'result'>('observe');
+const FocusGame: React.FC<FocusGameProps> = ({ onBack, onScore, isActive }) => {
+    const [phase, setPhase] = useState<'observe' | 'detect'>('observe');
     const [grid, setGrid] = useState<Color[]>([]);
     const [changedGrid, setChangedGrid] = useState<Color[]>([]);
     const [changedIdx, setChangedIdx] = useState<number>(-1);
     const [round, setRound] = useState(0);
-    const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [level, setLevel] = useState(1);
     const [timer, setTimer] = useState(3);
@@ -25,11 +26,11 @@ const FocusGame: React.FC<FocusGameProps> = ({ onBack }) => {
     const gridSize = Math.min(3 + Math.floor(level / 3), 5);
 
     const generateRound = useCallback(() => {
+        if (!isActive) return;
         const size = gridSize * gridSize;
         const newGrid = Array.from({ length: size }, () => pick(COLORS));
         setGrid(newGrid);
 
-        // Choose a random cell to change
         const idx = Math.floor(Math.random() * size);
         const originalColor = newGrid[idx];
         const newColor = pick(COLORS.filter((c) => c !== originalColor));
@@ -41,13 +42,24 @@ const FocusGame: React.FC<FocusGameProps> = ({ onBack }) => {
         setTimer(3);
         setPhase('observe');
         setFeedback(null);
-    }, [gridSize]);
+    }, [gridSize, isActive]);
 
     useEffect(() => {
-        generateRound();
-    }, []);
+        if (isActive) {
+            generateRound();
+        } else {
+            setRound(0);
+            setLives(3);
+            setLevel(1);
+            setGrid([]);
+            setChangedGrid([]);
+            setChangedIdx(-1);
+            setFeedback(null);
+        }
+    }, [isActive, generateRound]);
 
     useEffect(() => {
+        if (!isActive) return;
         if (phase === 'observe' && timer > 0) {
             const t = setTimeout(() => setTimer((t) => t - 1), 1000);
             return () => clearTimeout(t);
@@ -55,83 +67,45 @@ const FocusGame: React.FC<FocusGameProps> = ({ onBack }) => {
         if (phase === 'observe' && timer === 0) {
             setPhase('detect');
         }
-    }, [phase, timer]);
+    }, [phase, timer, isActive]);
 
     const handleCellClick = (idx: number) => {
-        if (phase !== 'detect' || feedback) return;
+        if (!isActive || phase !== 'detect' || feedback) return;
 
         const isCorrect = idx === changedIdx;
 
         if (isCorrect) {
             setFeedback('success');
             const points = 20 + level * 5;
-            setScore((s) => s + points);
+            onScore(points);
             setTimeout(() => {
-                if (round + 1 >= maxRounds) {
-                    setPhase('result');
-                } else {
-                    setRound((r) => r + 1);
-                    setLevel((l) => l + 1);
-                    generateRound();
-                }
+                setRound((r: number) => r + 1);
+                setLevel((l: number) => l + 1);
+                if (isActive) generateRound();
             }, 1000);
         } else {
             setFeedback('error');
-            setLives((l) => l - 1);
-            if (lives <= 1) {
-                setTimeout(() => setPhase('result'), 1000);
-            } else {
-                setTimeout(() => {
-                    setRound((r) => r + 1);
-                    generateRound();
-                }, 1200);
-            }
+            setLives((l: number) => l - 1);
+            setTimeout(() => {
+                setRound((r: number) => r + 1);
+                if (isActive) generateRound();
+            }, 1200);
         }
     };
 
-    if (phase === 'result') {
-        return (
-            <ResultScreen
-                score={score}
-                level={level}
-                stats={{ 'Rounds': `${round}/${maxRounds}` }}
-                onRetry={() => {
-                    setRound(0);
-                    setScore(0);
-                    setLives(3);
-                    setLevel(1);
-                    generateRound();
-                }}
-                onBack={onBack}
-            />
-        );
-    }
+    if (!isActive) return null;
 
     const displayGrid = phase === 'observe' ? grid : changedGrid;
     const cellSize = Math.max(50, Math.floor(280 / gridSize));
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Header
-                title="Focus Soutenu"
-                subtitle={phase === 'observe' ? 'Observe attentivement...' : 'Trouve la case qui a changé !'}
-                onBack={onBack}
-                lives={lives}
-                score={score}
-                level={level}
-                timer={phase === 'observe' ? timer : undefined}
-                progress={(round / maxRounds) * 100}
-            />
-            <div
-                style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 20,
-                }}
-            >
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            {phase === 'observe' && timer > 0 && (
+                <div style={{ position: 'absolute', top: 20, right: 20, fontSize: '2rem', fontWeight: 800, color: 'var(--cyan)' }}>
+                    {timer}
+                </div>
+            )}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <div
                     className={feedback === 'error' ? 'shake' : ''}
                     style={{

@@ -25,26 +25,146 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const GAMES: Record<string, GameInfo> = {
-    sequence: { name: 'Séquence Visuelle', desc: 'Mémorise et reproduis des séquences', icon: '🎨' },
-    nback: { name: 'N-Back', desc: 'Identifie les répétitions N étapes avant', icon: '🔄' },
-    chunking: { name: 'Chunking', desc: 'Regroupe pour mieux mémoriser', icon: '📦' },
-    updating: { name: 'Liste Vivante', desc: 'Modifie une liste en temps réel', icon: '📝' },
-    hallucination: { name: 'Spot the Hallucination', desc: 'Détecte les erreurs de l\'IA', icon: '🎭' },
-    fallacy: { name: 'Bullshit Detector', desc: 'Identifie les sophismes', icon: '🚨' },
-    trilemma: { name: 'Vrai / Faux / ?', desc: 'Distingue le vérifiable', icon: '❓' },
-    causal: { name: 'Chaîne Causale', desc: 'Reconstruis les liens cause-effet', icon: '🔗' },
-    recall: { name: 'Rappel Différé', desc: 'Mémorise puis rappelle après délai', icon: '🧩' },
-    humanai: { name: 'Humain ou IA ?', desc: 'Identifie l\'origine des textes', icon: '🤖' },
-    constraints: { name: 'Contraintes', desc: 'Construis avec des règles imposées', icon: '🎲' },
-    syntax: { name: 'Puzzle Syntaxique', desc: 'Reconstruis les phrases', icon: '🧱' },
-    cliche: { name: 'Langue Pure', desc: 'Détecte les clichés IA', icon: '✨' },
-    metaphor: { name: 'Métaphores', desc: 'Choisis la meilleure analogie', icon: '🌈' },
-    sequencing: { name: 'Remets dans l\'ordre', desc: 'Ordonne les étapes logiques', icon: '📊' },
-    resources: { name: 'Gestionnaire', desc: 'Optimise les ressources', icon: '💎' },
-    associations: { name: 'Connexions Improbables', desc: 'Relie des concepts éloignés', icon: '🔀' },
-    uchronia: { name: 'Et si... ?', desc: 'Imagine les conséquences alternatives', icon: '🌀' },
-    reaction: { name: 'Go / No-Go', desc: 'Réagis vite et bien', icon: '⚡' },
-    focus: { name: 'Focus Soutenu', desc: 'Détecte les changements subtils', icon: '👁️' }
+    sequence: {
+        name: 'Séquence Visuelle',
+        desc: 'Mémorise et reproduis des séquences',
+        icon: '🎨',
+        categoryId: 'memory',
+        tutorial: 'Mémorise l\'ordre d\'apparition des couleurs et reproduis la séquence exacte en cliquant sur les cases.'
+    },
+    nback: {
+        name: 'N-Back',
+        desc: 'Identifie les répétitions N étapes avant',
+        icon: '🔄',
+        categoryId: 'memory',
+        tutorial: 'Appuie sur MATCH si la couleur actuelle est identique à celle apparue N étapes auparavant.'
+    },
+    chunking: {
+        name: 'Chunking',
+        desc: 'Regroupe pour mieux mémoriser',
+        icon: '📦',
+        categoryId: 'memory',
+        tutorial: 'Regroupe les éléments par catégories ou caractéristiques communes pour augmenter ta capacité de mémorisation.'
+    },
+    updating: {
+        name: 'Liste Vivante',
+        desc: 'Modifie une liste en temps réel',
+        icon: '📝',
+        categoryId: 'memory',
+        tutorial: 'Garde en mémoire une liste d\'éléments qui change constamment. Seuls les derniers éléments comptent.'
+    },
+    hallucination: {
+        name: 'Spot the Hallucination',
+        desc: 'Détecte les erreurs de l\'IA',
+        icon: '🎭',
+        categoryId: 'critical',
+        tutorial: 'Analyse le texte généré par l\'IA et identifie les erreurs factuelles ou les "hallucinations" logiques.'
+    },
+    fallacy: {
+        name: 'Bullshit Detector',
+        desc: 'Identifie les sophismes',
+        icon: '🚨',
+        categoryId: 'critical',
+        tutorial: 'Repère les failles de raisonnement et les sophismes classiques (homme de paille, faux dilemme, etc.).'
+    },
+    trilemma: {
+        name: 'Vrai / Faux / ?',
+        desc: 'Distingue le vérifiable',
+        icon: '❓',
+        categoryId: 'critical',
+        tutorial: 'Distingue les faits prouvés, les faussetés et les affirmations invérifiables.'
+    },
+    causal: {
+        name: 'Chaîne Causale',
+        desc: 'Reconstruis les liens cause-effet',
+        icon: '🔗',
+        categoryId: 'semantic',
+        tutorial: 'Remets dans l\'ordre logique les étapes d\'un processus de cause à effet.'
+    },
+    recall: {
+        name: 'Rappel Différé',
+        desc: 'Mémorise puis rappelle après délai',
+        icon: '🧩',
+        categoryId: 'semantic',
+        tutorial: 'Mémorise une liste de mots, effectue une tâche de distraction, puis rappelle le maximum de mots.'
+    },
+    humanai: {
+        name: 'Humain ou IA ?',
+        desc: 'Identifie l\'origine des textes',
+        icon: '🤖',
+        categoryId: 'ownership',
+        tutorial: 'Analyse le style, la syntaxe et le ton pour deviner si le texte a été écrit par un humain ou une IA.'
+    },
+    constraints: {
+        name: 'Contraintes',
+        desc: 'Construis avec des règles imposées',
+        icon: '🎲',
+        categoryId: 'ownership',
+        tutorial: 'Produis un contenu original en respectant des contraintes strictes qui forcent ta créativité.'
+    },
+    syntax: {
+        name: 'Puzzle Syntaxique',
+        desc: 'Reconstruis les phrases',
+        icon: '🧱',
+        categoryId: 'linguistic',
+        tutorial: 'Réassemble les fragments de phrase pour reconstruire une structure grammaticale correcte.'
+    },
+    cliche: {
+        name: 'Langue Pure',
+        desc: 'Détecte les clichés IA',
+        icon: '✨',
+        categoryId: 'linguistic',
+        tutorial: 'Identifie les expressions stéréotypées et les tics de langage typiques des modèles de langue.'
+    },
+    metaphor: {
+        name: 'Métaphores',
+        desc: 'Choisis la meilleure analogie',
+        icon: '🌈',
+        categoryId: 'linguistic',
+        tutorial: 'Trouve l\'analogie la plus pertinente pour expliquer un concept complexe.'
+    },
+    sequencing: {
+        name: 'Remets dans l\'ordre',
+        desc: 'Ordonne les étapes logiques',
+        icon: '📊',
+        categoryId: 'executive',
+        tutorial: 'Ordonne chronologiquement les étapes d\'une tâche complexe pour optimiser son exécution.'
+    },
+    resources: {
+        name: 'Gestionnaire',
+        desc: 'Optimise les ressources',
+        icon: '💎',
+        categoryId: 'executive',
+        tutorial: 'Alloue tes ressources limitées (temps, budget) pour maximiser la valeur totale de tes objectifs.'
+    },
+    associations: {
+        name: 'Connexions Improbables',
+        desc: 'Relie des concepts éloignés',
+        icon: '🔀',
+        categoryId: 'creative',
+        tutorial: 'Trouve des liens logiques ou créatifs entre deux concepts qui n\'ont apparemment rien en commun.'
+    },
+    uchronia: {
+        name: 'Et si... ?',
+        desc: 'Imagine les conséquences alternatives',
+        icon: '🌀',
+        categoryId: 'creative',
+        tutorial: 'Explore les conséquences d\'un changement historique ou d\'un scénario imaginaire.'
+    },
+    reaction: {
+        name: 'Go / No-Go',
+        desc: 'Réagis vite et bien',
+        icon: '⚡',
+        categoryId: 'engagement',
+        tutorial: 'Réagis le plus rapidement possible aux stimuli positifs et inhibe ta réponse aux stimuli négatifs.'
+    },
+    focus: {
+        name: 'Focus Soutenu',
+        desc: 'Détecte les changements subtils',
+        icon: '👁️',
+        categoryId: 'engagement',
+        tutorial: 'Maintiens ton attention sur une longue durée pour repérer des variations minimes dans ton environnement.'
+    }
 };
 
 export const HALLUCINATION_DATA: HallucinationData[] = [

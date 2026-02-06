@@ -8,25 +8,29 @@ import { COLORS, COLOR_HEX } from '../data/gameData';
 import { pick, shuffle } from '../utils/helpers';
 import { Color } from '../types';
 
+import Stat from '../components/Stat';
+
 interface UpdatingGameProps {
     onBack: () => void;
+    onScore: (score: number) => void;
+    isActive: boolean;
 }
 
-const UpdatingGame: React.FC<UpdatingGameProps> = ({ onBack }) => {
-    const [phase, setPhase] = useState<'playing' | 'result'>('playing');
+const UpdatingGame: React.FC<UpdatingGameProps> = ({ onBack, onScore, isActive }) => {
+    const [phase, setPhase] = useState<'playing'>('playing');
     const [initList, setInitList] = useState<Color[]>([]);
     const [finalList, setFinalList] = useState<Color[]>([]);
     const [instruction, setInstruction] = useState('');
     const [options, setOptions] = useState<string[]>([]);
     const [level, setLevel] = useState(1);
     const [round, setRound] = useState(0);
-    const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
     const [showInstr, setShowInstr] = useState(true);
     const maxRounds = 5;
 
     const genRound = useCallback(() => {
+        if (!isActive) return;
         const size = 3 + Math.floor(level / 2);
         const init = Array.from({ length: size }, () => pick(COLORS));
         let current = [...init];
@@ -73,152 +77,128 @@ const UpdatingGame: React.FC<UpdatingGameProps> = ({ onBack }) => {
         ].filter((w) => w !== correct);
         setOptions(shuffle([correct, ...wrongs.slice(0, 3)]));
         setShowInstr(true);
-    }, [level]);
+    }, [level, isActive]);
 
     useEffect(() => {
-        genRound();
-    }, [genRound]);
+        if (isActive) {
+            genRound();
+        } else {
+            setRound(0);
+            setLevel(1);
+            setLives(3);
+            setInitList([]);
+            setFinalList([]);
+        }
+    }, [isActive, genRound]);
 
     useEffect(() => {
-        if (showInstr) {
+        if (isActive && showInstr) {
             const t = setTimeout(() => setShowInstr(false), 3000 + level * 500);
             return () => clearTimeout(t);
         }
-    }, [showInstr, level]);
+    }, [isActive, showInstr, level]);
 
     const handleAnswer = (ans: string) => {
+        if (!isActive) return;
         const correct = finalList.join('-');
         if (ans === correct) {
             setFeedback('success');
-            setScore((s) => s + level * 25);
+            onScore(level * 25);
             setTimeout(() => {
                 setFeedback(null);
                 if (round + 1 >= maxRounds) {
-                    setLevel((l) => l + 1);
+                    setLevel((l: number) => l + 1);
                     setRound(0);
-                } else setRound((r) => r + 1);
-                genRound();
+                } else setRound((r: number) => r + 1);
+                if (isActive) genRound();
             }, 1000);
         } else {
             setFeedback('error');
-            setLives((l) => l - 1);
-            if (lives <= 1) setTimeout(() => setPhase('result'), 500);
-            else
-                setTimeout(() => {
-                    setFeedback(null);
-                    genRound();
-                }, 1500);
+            setLives((l: number) => l - 1);
+            setTimeout(() => {
+                setFeedback(null);
+                if (isActive) genRound();
+            }, 1000);
         }
     };
 
-    if (phase === 'result')
-        return (
-            <ResultScreen
-                score={score}
-                level={level}
-                onRetry={() => {
-                    setLevel(1);
-                    setRound(0);
-                    setScore(0);
-                    setLives(3);
-                    genRound();
-                    setPhase('playing');
-                }}
-                onBack={onBack}
-            />
-        );
+    if (!isActive) return null;
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Header
-                title="Liste Vivante"
-                onBack={onBack}
-                lives={lives}
-                score={score}
-                level={level}
-                progress={(round / maxRounds) * 100}
-            />
-            <div
-                style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 20,
-                }}
-            >
-                {showInstr ? (
-                    <>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>Liste initiale :</p>
-                        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-                            {initList.map((c, i) => (
-                                <div
-                                    key={i}
-                                    style={{
-                                        width: 45,
-                                        height: 45,
-                                        borderRadius: 10,
-                                        background: COLOR_HEX[c],
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontWeight: 700,
-                                        color: '#000',
-                                    }}
-                                >
-                                    {i + 1}
-                                </div>
-                            ))}
-                        </div>
-                        <Card>
-                            <p style={{ color: 'var(--yellow)', fontWeight: 600, textAlign: 'center' }}>
-                                📝 {instruction}
-                            </p>
-                        </Card>
-                        <p style={{ color: 'var(--text-muted)', marginTop: 16, fontSize: '0.85rem' }}>
-                            Mémorise les transformations...
-                        </p>
-                    </>
-                ) : (
-                    <>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
-                            Quel est le résultat final ?
-                        </p>
-                        <div
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 10,
-                                width: '100%',
-                                maxWidth: 360,
-                            }}
-                        >
-                            {options.map((opt, i) => (
-                                <OptionBtn
-                                    key={i}
-                                    onClick={() => handleAnswer(opt)}
-                                    disabled={!!feedback}
-                                    correct={feedback && opt === finalList.join('-')}
-                                    wrong={feedback === 'error' && opt !== finalList.join('-')}
-                                >
-                                    <div style={{ display: 'flex', gap: 6 }}>
-                                        {opt.split('-').map((c, j) => (
-                                            <div
-                                                key={j}
-                                                style={{ width: 32, height: 32, borderRadius: 6, background: COLOR_HEX[c as Color] }}
-                                            />
-                                        ))}
-                                    </div>
-                                </OptionBtn>
-                            ))}
-                        </div>
-                    </>
-                )}
-                {feedback && (
-                    <Feedback type={feedback} message={feedback === 'success' ? 'Correct !' : 'Incorrect !'} />
-                )}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ position: 'absolute', top: 20, right: 20 }}>
+                <Stat label="NIVEAU" value={level} color="var(--cyan)" />
             </div>
+            {showInstr ? (
+                <>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>Liste initiale :</p>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                        {initList.map((c, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    width: 45,
+                                    height: 45,
+                                    borderRadius: 10,
+                                    background: COLOR_HEX[c],
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 700,
+                                    color: '#000',
+                                }}
+                            >
+                                {i + 1}
+                            </div>
+                        ))}
+                    </div>
+                    <Card>
+                        <p style={{ color: 'var(--yellow)', fontWeight: 600, textAlign: 'center' }}>
+                            📝 {instruction}
+                        </p>
+                    </Card>
+                    <p style={{ color: 'var(--text-muted)', marginTop: 16, fontSize: '0.85rem' }}>
+                        Mémorise les transformations...
+                    </p>
+                </>
+            ) : (
+                <>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
+                        Quel est le résultat final ?
+                    </p>
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 10,
+                            width: '100%',
+                            maxWidth: 360,
+                        }}
+                    >
+                        {options.map((opt, i) => (
+                            <OptionBtn
+                                key={i}
+                                onClick={() => handleAnswer(opt)}
+                                disabled={!!feedback}
+                                correct={feedback && opt === finalList.join('-')}
+                                wrong={feedback === 'error' && opt !== finalList.join('-')}
+                            >
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                    {opt.split('-').map((c, j) => (
+                                        <div
+                                            key={j}
+                                            style={{ width: 32, height: 32, borderRadius: 6, background: COLOR_HEX[c as Color] }}
+                                        />
+                                    ))}
+                                </div>
+                            </OptionBtn>
+                        ))}
+                    </div>
+                </>
+            )}
+            {feedback && (
+                <Feedback type={feedback} message={feedback === 'success' ? 'Correct !' : 'Incorrect !'} />
+            )}
         </div>
     );
 };

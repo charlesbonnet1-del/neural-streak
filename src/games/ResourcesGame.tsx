@@ -9,20 +9,21 @@ import { ResourcesData, ResourceObjective } from '../types';
 
 interface ResourcesGameProps {
     onBack: () => void;
+    onScore: (score: number) => void;
+    isActive: boolean;
 }
 
-const ResourcesGame: React.FC<ResourcesGameProps> = ({ onBack }) => {
-    const [phase, setPhase] = useState<'playing' | 'result'>('playing');
+const ResourcesGame: React.FC<ResourcesGameProps> = ({ onBack, onScore, isActive }) => {
     const [current, setCurrent] = useState<ResourcesData | null>(null);
     const [selected, setSelected] = useState<string[]>([]);
     const [round, setRound] = useState(0);
-    const [score, setScore] = useState(0);
     const [lives, setLives] = useState(3);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
     const [used, setUsed] = useState<number[]>([]);
     const maxRounds = 5;
 
     const next = useCallback(() => {
+        if (!isActive) return;
         const avail = RESOURCES_DATA.map((_, i) => i).filter((i) => !used.includes(i));
         if (avail.length === 0) {
             setUsed([]);
@@ -31,15 +32,24 @@ const ResourcesGame: React.FC<ResourcesGameProps> = ({ onBack }) => {
             return;
         }
         const idx = pick(avail);
-        setUsed((p) => [...p, idx]);
+        setUsed((p: number[]) => [...p, idx]);
         setCurrent(RESOURCES_DATA[idx]);
         setSelected([]);
         setFeedback(null);
-    }, [used]);
+    }, [used, isActive]);
 
     useEffect(() => {
-        next();
-    }, []);
+        if (isActive) {
+            next();
+        } else {
+            setRound(0);
+            setLives(3);
+            setUsed([]);
+            setCurrent(null);
+            setSelected([]);
+            setFeedback(null);
+        }
+    }, [isActive, next]);
 
     const getUsedResources = () => {
         if (!current) return { budget: 0, time: 0, value: 0 };
@@ -57,15 +67,15 @@ const ResourcesGame: React.FC<ResourcesGameProps> = ({ onBack }) => {
 
     const canSelect = (obj: ResourceObjective) => {
         if (!current) return false;
-        const used = getUsedResources();
+        const usedRes = getUsedResources();
         return (
-            used.budget + obj.budgetCost <= current.budget &&
-            used.time + obj.timeCost <= current.time
+            usedRes.budget + obj.budgetCost <= current.budget &&
+            usedRes.time + obj.timeCost <= current.time
         );
     };
 
     const handleToggle = (objName: string) => {
-        if (feedback) return;
+        if (!isActive || feedback) return;
         if (selected.includes(objName)) {
             setSelected(selected.filter((n) => n !== objName));
         } else {
@@ -77,73 +87,41 @@ const ResourcesGame: React.FC<ResourcesGameProps> = ({ onBack }) => {
     };
 
     const validateSelection = () => {
-        if (!current) return;
+        if (!isActive || !current) return;
         const usedRes = getUsedResources();
         const efficiency = usedRes.value / current.optimalValue;
 
         if (efficiency >= 0.9) {
             setFeedback('success');
-            setScore((s) => s + Math.round(usedRes.value));
+            onScore(Math.round(usedRes.value));
             setTimeout(() => {
-                if (round + 1 >= maxRounds) setPhase('result');
-                else {
-                    setRound((r) => r + 1);
-                    next();
-                }
+                setRound((r: number) => r + 1);
+                if (isActive) next();
             }, 1200);
         } else if (efficiency >= 0.6) {
             setFeedback('success');
-            setScore((s) => s + Math.round(usedRes.value * 0.7));
+            onScore(Math.round(usedRes.value * 0.7));
             setTimeout(() => {
-                if (round + 1 >= maxRounds) setPhase('result');
-                else {
-                    setRound((r) => r + 1);
-                    next();
-                }
+                setRound((r: number) => r + 1);
+                if (isActive) next();
             }, 1200);
         } else {
             setFeedback('error');
-            setLives((l) => l - 1);
-            if (lives <= 1) setTimeout(() => setPhase('result'), 1200);
-            else
-                setTimeout(() => {
-                    setRound((r) => r + 1);
-                    next();
-                }, 1500);
+            setLives((l: number) => l - 1);
+            setTimeout(() => {
+                setRound((r: number) => r + 1);
+                if (isActive) next();
+            }, 1500);
         }
     };
 
     const usedRes = getUsedResources();
 
-    if (phase === 'result') {
-        return (
-            <ResultScreen
-                score={score}
-                stats={{ 'Rounds': `${round}/${maxRounds}` }}
-                onRetry={() => {
-                    setRound(0);
-                    setScore(0);
-                    setLives(3);
-                    setUsed([]);
-                    next();
-                    setPhase('playing');
-                }}
-                onBack={onBack}
-            />
-        );
-    }
+    if (!isActive) return null;
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <Header
-                title="Gestionnaire"
-                subtitle="Optimise les ressources"
-                onBack={onBack}
-                lives={lives}
-                score={score}
-                progress={(round / maxRounds) * 100}
-            />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 600 }}>
                 {current && (
                     <>
                         <Card style={{ textAlign: 'center' }}>
