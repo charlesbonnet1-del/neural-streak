@@ -67,7 +67,7 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
         );
 
         setTargets(newTargets);
-        setOptions(shuffle([...newTargets, distractors]));
+        setOptions(shuffle([...newTargets, ...distractors]));
         setSelected([]);
         setTimer(5);
         setPhase('memorize');
