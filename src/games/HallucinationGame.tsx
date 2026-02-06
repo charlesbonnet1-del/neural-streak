@@ -25,15 +25,11 @@ const HallucinationGame: React.FC<HallucinationGameProps> = ({ onScore, isActive
         if (!isActive) return;
         const avail = HALLUCINATION_DATA.map((_, i) => i).filter((i) => !used.includes(i));
 
-        // Refill if empty
         let pool = avail;
-        if (pool.length === 0) {
-            setUsed([]);
-            pool = HALLUCINATION_DATA.map((_, i) => i);
-        }
+        if (pool.length === 0) pool = HALLUCINATION_DATA.map((_, i) => i);
 
         const idx = pick(pool);
-        setUsed((p) => [...p, idx]);
+        setUsed((p: number[]) => (pool.length === HALLUCINATION_DATA.length ? [idx] : [...p, idx]));
         setCurrent(HALLUCINATION_DATA[idx]);
         setFeedback(null);
     }, [used, isActive]);
@@ -57,14 +53,14 @@ const HallucinationGame: React.FC<HallucinationGameProps> = ({ onScore, isActive
             setFeedback('success');
             onScore(level * 30);
             setTimeout(() => {
-                setLevel(l => l + 1);
+                setLevel((l: number) => l + 1);
                 next();
             }, 1000);
         } else {
             setFeedback('error');
             setTimeout(() => {
                 next();
-            }, 1500);
+            }, 1200);
         }
     };
 
@@ -82,78 +78,145 @@ const HallucinationGame: React.FC<HallucinationGameProps> = ({ onScore, isActive
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: 24,
-                transition: 'background-color 0.3s ease'
+                transition: 'background-color 0.4s ease',
+                position: 'relative',
+                overflow: 'hidden'
             }}
         >
             <div style={{ position: 'absolute', top: 20, right: 20 }}>
                 <Stat label="NIVEAU" value={level} color="var(--blue)" />
             </div>
 
-            <div style={{ width: '100%', maxWidth: 600 }}>
+            {/* Feedback Overlays */}
+            {feedback === 'success' && (
+                <div className="scaleIn" style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    fontSize: '10rem',
+                    color: 'var(--green)',
+                    pointerEvents: 'none',
+                    opacity: 0.8,
+                    filter: 'drop-shadow(0 0 20px rgba(56, 142, 60, 0.4))'
+                }}>
+                    ✓
+                </div>
+            )}
+            {feedback === 'error' && (
+                <div className="shake" style={{
+                    position: 'absolute',
+                    zIndex: 10,
+                    fontSize: '10rem',
+                    color: 'var(--red)',
+                    pointerEvents: 'none',
+                    opacity: 0.8,
+                    filter: 'drop-shadow(0 0 20px rgba(211, 47, 47, 0.4))'
+                }}>
+                    ✗
+                </div>
+            )}
+
+            <div style={{ width: '100%', maxWidth: 640 }}>
                 {current && (
-                    <Card style={{ padding: 32, marginBottom: 40, border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                    <Card style={{
+                        padding: '48px 32px',
+                        marginBottom: 48,
+                        border: 'none',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
+                        background: 'rgba(255,255,255,0.9)',
+                        backdropFilter: 'blur(10px)',
+                        borderRadius: 'var(--radius-lg)'
+                    }}>
                         <p style={{
-                            fontSize: '1.25rem',
-                            lineHeight: 1.7,
+                            fontSize: '1.4rem',
+                            lineHeight: 1.6,
                             color: 'var(--text-primary)',
                             textAlign: 'center',
-                            fontWeight: 500
+                            fontWeight: 500,
+                            fontFamily: 'var(--font-display)'
                         }}>
                             "{current.text}"
                         </p>
 
                         {feedback === 'error' && current.hasError && (
-                            <div className="scaleIn" style={{
-                                marginTop: 24,
-                                padding: 16,
+                            <div className="fadeIn" style={{
+                                marginTop: 32,
+                                padding: 20,
                                 background: 'rgba(211, 47, 47, 0.05)',
                                 borderRadius: 'var(--radius-md)',
-                                borderLeft: '4px solid var(--red)'
+                                border: '1px solid rgba(211, 47, 47, 0.1)',
+                                textAlign: 'center'
                             }}>
-                                <p style={{ color: 'var(--red)', fontWeight: 600 }}>Hallucination détectée :</p>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{current.error}</p>
+                                <p style={{ color: 'var(--red)', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Logique rompue :</p>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>{current.error}</p>
                             </div>
                         )}
                     </Card>
                 )}
 
                 <div style={{ textAlign: 'center' }}>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Le texte contient-il une erreur logique ?
+                    <p style={{
+                        color: 'var(--text-muted)',
+                        marginBottom: 24,
+                        fontSize: '0.85rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.15em',
+                        fontWeight: 600
+                    }}>
+                        Détectez-vous une hallucination ?
                     </p>
 
-                    <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
                         <button
-                            className="btn btn-secondary"
+                            className="btn"
                             onClick={() => handleAnswer(false)}
                             disabled={!!feedback}
                             style={{
                                 flex: 1,
-                                height: 60,
+                                height: 80,
                                 borderRadius: 'var(--radius-lg)',
-                                border: '2px solid rgba(56, 142, 60, 0.2)',
+                                border: 'none',
                                 color: 'var(--green)',
                                 background: 'white',
-                                fontSize: '1.1rem'
+                                fontSize: '1.25rem',
+                                fontWeight: 700,
+                                boxShadow: feedback === 'success' ? 'none' : '0 8px 0 rgba(56, 142, 60, 0.1), 0 15px 30px rgba(56, 142, 60, 0.05)',
+                                transform: feedback ? 'translateY(6px)' : 'none',
+                                transition: 'all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignItems: 'center'
                             }}
                         >
-                            ✓ Correct
+                            <span style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: 4, letterSpacing: '0.1em' }}>VALIDE</span>
+                            ✓ CORRECT
                         </button>
                         <button
-                            className="btn btn-secondary"
+                            className="btn"
                             onClick={() => handleAnswer(true)}
                             disabled={!!feedback}
                             style={{
                                 flex: 1,
-                                height: 60,
+                                height: 80,
                                 borderRadius: 'var(--radius-lg)',
-                                border: '2px solid rgba(211, 47, 47, 0.2)',
+                                border: 'none',
                                 color: 'var(--red)',
                                 background: 'white',
-                                fontSize: '1.1rem'
+                                fontSize: '1.25rem',
+                                fontWeight: 700,
+                                boxShadow: feedback === 'error' ? 'none' : '0 8px 0 rgba(211, 47, 47, 0.1), 0 15px 30px rgba(211, 47, 47, 0.05)',
+                                transform: feedback ? 'translateY(6px)' : 'none',
+                                transition: 'all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignItems: 'center'
                             }}
                         >
-                            ✗ Erreur
+                            <span style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: 4, letterSpacing: '0.1em' }}>HALLUCINATION</span>
+                            ✗ ERREUR
                         </button>
                     </div>
                 </div>
