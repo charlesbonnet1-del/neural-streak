@@ -26,7 +26,6 @@ import FocusGame from './games/FocusGame';
 
 const App: React.FC = () => {
     const [currentGame, setCurrentGame] = useState<string | null>(null);
-    const [currentGame, setCurrentGame] = useState<string | null>(null);
     const { user, login } = useAuth();
     const [userStats, setUserStats] = useState({ streak: 0, totalScore: 0 });
 
