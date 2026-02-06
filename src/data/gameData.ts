@@ -190,16 +190,16 @@ export const FALLACY_DATA: FallacyData[] = [
 ];
 
 export const TRILEMMA_DATA: TrilemmaData[] = [
-    { statement: "Les humains n'utilisent que 10% de leur cerveau.", answer: "false" },
-    { statement: "La lumière voyage à environ 300 000 km/s dans le vide.", answer: "true" },
-    { statement: "Nous découvrirons une vie extraterrestre intelligente d'ici 50 ans.", answer: "unknown" },
-    { statement: "La foudre ne frappe jamais deux fois au même endroit.", answer: "false" },
-    { statement: "L'aspirine a été extraite à l'origine de l'écorce de saule.", answer: "true" },
-    { statement: "Le Bitcoin sera la monnaie mondiale de référence en 2040.", answer: "unknown" },
-    { statement: "Le café bloque la croissance des enfants.", answer: "false" },
-    { statement: "L'ADN humain est identique à environ 98% à celui du chimpanzé.", answer: "true" },
-    { statement: "La Grande Muraille de Chine est visible à l'œil nu depuis la Lune.", answer: "false" },
-    { statement: "L'IA atteindra une singularité technologique avant 2050.", answer: "unknown" }
+    { statement: "Si tous les A sont des B, et que cet objet est un A, alors cet objet est un B.", answer: "true" },
+    { statement: "Un triangle rectangle possède deux angles de 90 degrés.", answer: "false" },
+    { statement: "Le prochain lancer d'une pièce équilibrée sera Pile.", answer: "unknown" },
+    { statement: "Si X est plus grand que Y, et Y est plus grand que Z, alors Z est plus grand que X.", answer: "false" },
+    { statement: "Dans un groupe de 3 personnes, au moins deux sont nées le même jour de la semaine.", answer: "unknown" },
+    { statement: "Un nombre entier peut être à la fois pair et impair.", answer: "false" },
+    { statement: "Si il pleut, le sol est mouillé. Le sol est mouillé, donc il a plu.", answer: "unknown" },
+    { statement: "Le double d'un nombre impair est toujours un nombre pair.", answer: "true" },
+    { statement: "Si Alice parle plus fort que Bob, alors Bob parle moins fort qu'Alice.", answer: "true" },
+    { statement: "Une boîte contient 10 billes. Si j'en tire une, elle sera forcément rouge.", answer: "unknown" }
 ];
 
 export const HUMAN_AI_DATA: HumanAiData[] = [

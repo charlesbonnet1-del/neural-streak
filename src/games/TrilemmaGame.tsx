@@ -68,9 +68,9 @@ const TrilemmaGame: React.FC<TrilemmaGameProps> = ({ onScore, isActive }) => {
     const flashClass = feedback === 'success' ? 'flash-success' : feedback === 'error' ? 'flash-error' : '';
 
     const options = [
-        { id: 'true' as const, label: 'FAIT PROUVÉ', color: 'var(--green)', icon: '✓', sub: 'Scientifique / Factuel' },
-        { id: 'false' as const, label: 'CONTRE-VÉRITÉ', color: 'var(--red)', icon: '✗', sub: 'Mythe / Erreur' },
-        { id: 'unknown' as const, label: 'INCERTAIN', color: 'var(--yellow)', icon: '?', sub: 'Futur / Spéculatif' },
+        { id: 'true' as const, label: 'LOGIQUE / CERTAIN', color: 'var(--green)', icon: '✓', sub: 'Nécessairement vrai' },
+        { id: 'false' as const, label: 'CONTRADICTOIRE', color: 'var(--red)', icon: '✗', sub: 'Logiquement impossible' },
+        { id: 'unknown' as const, label: 'INDÉTERMINÉ', color: 'var(--yellow)', icon: '?', sub: "Manque de données" },
     ];
 
     return (
