@@ -22,9 +22,9 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameId, onBack, children 
 
     const handleScore = useCallback((s: number) => {
         if (phase === 'playing') {
-            setScore((prev) => prev + s);
+            setScore((prev: number) => prev + s);
         } else if (phase === 'practice') {
-            setPracticeRounds((prev) => prev + 1);
+            setPracticeRounds((prev: number) => prev + 1);
         }
     }, [phase]);
 
