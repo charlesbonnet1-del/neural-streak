@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Card from '../components/Card';
 import Stat from '../components/Stat';
 import { RECALL_WORDS } from '../data/gameData';
@@ -19,8 +19,9 @@ interface CloudWord {
     x: number;
     y: number;
     size: number;
-    color: string;
-    isTarget: boolean;
+    rotation: number;
+    duration: number;
+    delay: number;
 }
 
 const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
@@ -32,34 +33,28 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
     const [timer, setTimer] = useState(5);
     const [feedback, setFeedback] = useState<'success' | 'error' | null>(null);
     const [cloudWords, setCloudWords] = useState<CloudWord[]>([]);
-    const [oddWordFound, setOddWordFound] = useState(false);
 
-    const generateCloud = useCallback((targetWords: string[]) => {
-        const cloudSize = 15;
-        // Mix of semantically similar words and random ones
-        // In a real app, we'd have a semantic map. Here we'll just pick more words from RECALL_WORDS
-        const others = pickN(RECALL_WORDS.filter(w => !targetWords.includes(w)), cloudSize);
+    const generateCloud = useCallback(() => {
+        const cloudSize = 40; // High density
+        const wordsFromData = pickN(RECALL_WORDS, cloudSize);
 
-        // Pick one "Odd" word that will be in a different color
-        const oddIdx = Math.floor(Math.random() * others.length);
-
-        const words: CloudWord[] = others.map((word, i) => ({
+        const words: CloudWord[] = wordsFromData.map((word, i) => ({
             text: word,
-            id: `cloud-${i}-${word}`,
-            x: Math.random() * 80 + 10, // 10% to 90%
-            y: Math.random() * 80 + 10,
-            size: Math.random() * 1.5 + 0.8,
-            color: i === oddIdx ? 'var(--magenta)' : 'var(--text-primary)',
-            isTarget: i === oddIdx
+            id: `cloud-${i}-${word}-${Math.random()}`,
+            x: Math.random() * 90 + 5,
+            y: Math.random() * 90 + 5,
+            size: Math.random() * 1.8 + 0.6,
+            rotation: Math.random() * 40 - 20,
+            duration: Math.random() * 1.5 + 0.5,
+            delay: Math.random() * 1.2
         }));
         setCloudWords(words);
-        setOddWordFound(false);
     }, []);
 
     const startRound = useCallback(() => {
         if (!isActive) return;
         const wordCount = Math.min(3 + Math.floor(level / 2), 8);
-        const distractorCount = 6;
+        const distractorCount = 8;
         const newTargets = pickN(RECALL_WORDS, wordCount);
         const distractors = pickN(
             RECALL_WORDS.filter((w) => !newTargets.includes(w)),
@@ -69,7 +64,7 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
         setTargets(newTargets);
         setOptions(shuffle([...newTargets, ...distractors]));
         setSelected([]);
-        setTimer(5);
+        setTimer(4); // Slightly shorter memorize phase for speed
         setPhase('memorize');
         setFeedback(null);
     }, [level, isActive]);
@@ -95,14 +90,14 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
 
         if (timer === 0) {
             if (phase === 'memorize') {
-                generateCloud(targets);
-                setTimer(8); // Distraction phase length
+                generateCloud();
+                setTimer(2); // Short, intense distraction
                 setPhase('distract');
             } else if (phase === 'distract') {
                 setPhase('recall');
             }
         }
-    }, [timer, phase, isActive, feedback, targets, generateCloud]);
+    }, [timer, phase, isActive, feedback, generateCloud]);
 
     const handleWordSelect = (word: string) => {
         if (!isActive || phase !== 'recall' || feedback) return;
@@ -136,13 +131,6 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
         }
     };
 
-    const handleCloudClick = (word: CloudWord) => {
-        if (word.isTarget) {
-            setOddWordFound(true);
-            onScore(10 * level); // Minor bonus for finding the odd one
-        }
-    };
-
     if (!isActive) return null;
 
     const flashClass = feedback === 'success' ? 'flash-success' : feedback === 'error' ? 'flash-error' : '';
@@ -158,104 +146,116 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
                 justifyContent: 'center',
                 padding: 24,
                 transition: 'background-color 0.4s ease',
-                position: 'relative'
+                position: 'relative',
+                background: phase === 'distract' ? 'rgba(255,255,255,0.95)' : 'transparent'
             }}
         >
             <div style={{ position: 'absolute', top: 20, right: 20 }}>
                 <Stat label="NIVEAU" value={level} color="var(--purple)" />
             </div>
 
-            {/* Overlays */}
+            {/* Feedback Overlays */}
             <AnimatePresence>
                 {feedback === 'success' && (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} style={{
-                        position: 'absolute', zIndex: 100, fontSize: '10rem', color: 'var(--green)', opacity: 0.8
-                    }}>✓</motion.div>
+                    <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1.5, opacity: 0.8 }}
+                        exit={{ scale: 2, opacity: 0 }}
+                        style={{ position: 'absolute', zIndex: 1000, fontSize: '12rem', color: 'var(--green)' }}
+                    >✓</motion.div>
                 )}
                 {feedback === 'error' && (
-                    <motion.div initial={{ x: -20 }} animate={{ x: [0, -10, 10, -10, 10, 0] }} exit={{ opacity: 0 }} style={{
-                        position: 'absolute', zIndex: 100, fontSize: '10rem', color: 'var(--red)', opacity: 0.8
-                    }}>✗</motion.div>
+                    <motion.div
+                        initial={{ x: -50, opacity: 0 }}
+                        animate={{ x: [0, -20, 20, -20, 20, 0], opacity: 0.8 }}
+                        exit={{ opacity: 0 }}
+                        style={{ position: 'absolute', zIndex: 1000, fontSize: '12rem', color: 'var(--red)' }}
+                    >✗</motion.div>
                 )}
             </AnimatePresence>
 
-            <div style={{ width: '100%', maxWidth: 640 }}>
+            <div style={{ width: '100%', maxWidth: 800 }}>
                 <p style={{
                     color: 'var(--text-muted)', textAlign: 'center', marginBottom: 16,
-                    fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 700
+                    fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 800
                 }}>
                     Rappel Différé
                 </p>
 
                 {phase === 'memorize' && (
-                    <div style={{ textAlign: 'center' }}>
-                        <Card style={{ padding: '40px 32px', marginBottom: 24 }}>
-                            <h2 style={{ fontSize: '1.2rem', marginBottom: 24, opacity: 0.6 }}>Mémorisez ces mots</h2>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center' }}>
+                        <Card style={{ padding: '48px 32px', marginBottom: 32, boxShadow: '0 15px 40px rgba(0,0,0,0.08)' }}>
+                            <h2 style={{ fontSize: '1.4rem', marginBottom: 32, fontWeight: 800, color: 'var(--purple)' }}>Concentrez-vous</h2>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
                                 {targets.map(w => (
                                     <span key={w} style={{
-                                        padding: '10px 20px', background: 'var(--bg-card)',
-                                        borderRadius: 'var(--radius-md)', fontWeight: 700, fontSize: '1.2rem'
+                                        padding: '12px 24px', background: 'var(--bg-card)', border: '1px solid rgba(0,0,0,0.05)',
+                                        borderRadius: 'var(--radius-lg)', fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-primary)'
                                     }}>
                                         {w}
                                     </span>
                                 ))}
                             </div>
                         </Card>
-                        <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--purple)' }}>{timer}s</div>
-                    </div>
+                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--purple)', opacity: 0.4 }}>{timer}s</div>
+                    </motion.div>
                 )}
 
                 {phase === 'distract' && (
-                    <div style={{ textAlign: 'center', height: 400, position: 'relative' }}>
-                        <h2 style={{ fontSize: '1.1rem', marginBottom: 8, color: 'var(--magenta)', fontWeight: 800 }}>
-                            {oddWordFound ? "Bien vu ! Continuez de regarder..." : "TROUVEZ L'INTRUS (COULEUR) !"}
-                        </h2>
-                        <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', background: 'rgba(0,0,0,0.02)', borderRadius: 'var(--radius-lg)' }}>
+                    <div style={{ width: '100%', height: '60vh', position: 'fixed', top: 0, left: 0, zIndex: 500, overflow: 'hidden' }}>
+                        <AnimatePresence>
                             {cloudWords.map(w => (
                                 <motion.div
                                     key={w.id}
-                                    initial={{ x: `${w.x}%`, y: `${w.y}%`, opacity: 0 }}
+                                    initial={{ scale: 0, opacity: 0, x: `${w.x}vw`, y: `${w.y}vh`, rotate: w.rotation }}
                                     animate={{
-                                        x: [`${w.x}%`, `${(w.x + 10) % 100}%`, `${w.x}%`],
-                                        y: [`${w.y}%`, `${(w.y + 10) % 100}%`, `${w.y}%`],
-                                        opacity: 1
+                                        scale: [0, 1.2, 1],
+                                        opacity: [0, 1, 0.8],
+                                        y: [`${w.y}vh`, `${w.y - 10}vh`]
                                     }}
-                                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                                    onClick={() => handleCloudClick(w)}
+                                    transition={{ duration: w.duration, delay: w.delay }}
                                     style={{
-                                        position: 'absolute', cursor: 'pointer',
-                                        fontSize: `${w.size}rem`, fontWeight: 700,
-                                        color: oddWordFound && w.isTarget ? 'var(--green)' : w.color,
-                                        textShadow: '0 2px 10px rgba(0,0,0,0.05)',
-                                        whiteSpace: 'nowrap'
+                                        position: 'absolute',
+                                        fontSize: `${w.size}rem`, fontWeight: 900,
+                                        color: 'var(--text-primary)',
+                                        opacity: 0.3,
+                                        whiteSpace: 'nowrap',
+                                        pointerEvents: 'none',
+                                        filter: 'blur(0.5px)'
                                     }}
                                 >
                                     {w.text}
                                 </motion.div>
                             ))}
-                        </div>
-                        <div style={{ marginTop: 16, fontSize: '1.5rem', fontWeight: 800 }}>{timer}s</div>
+                        </AnimatePresence>
+                        <motion.div
+                            animate={{ opacity: [0.2, 0.5, 0.2] }}
+                            transition={{ duration: 0.5, repeat: Infinity }}
+                            style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '3rem', fontWeight: 900, color: 'var(--purple)', zIndex: 600 }}
+                        >
+                            DISTRACTION
+                        </motion.div>
                     </div>
                 )}
 
                 {phase === 'recall' && (
-                    <div style={{ textAlign: 'center' }}>
-                        <Card style={{ padding: '32px', marginBottom: 32 }}>
-                            <h2 style={{ fontSize: '1.2rem', marginBottom: 24, opacity: 0.6 }}>Sélectionnez les mots du début</h2>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-                                {options.filter(w => typeof w === 'string').map(w => (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center' }}>
+                        <Card style={{ padding: '32px', marginBottom: 40, border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                            <h2 style={{ fontSize: '1.2rem', marginBottom: 32, fontWeight: 700, color: 'var(--text-muted)' }}>Mots de la liste initiale ?</h2>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                                {options.map(w => (
                                     <button
                                         key={w}
                                         className="btn"
                                         onClick={() => handleWordSelect(w)}
                                         style={{
-                                            padding: '12px 24px', borderRadius: 'var(--radius-md)',
+                                            padding: '16px 28px', borderRadius: 'var(--radius-md)',
                                             background: selected.includes(w) ? 'var(--purple)' : 'white',
                                             color: selected.includes(w) ? 'white' : 'var(--text-primary)',
-                                            border: 'none', fontWeight: 700,
-                                            boxShadow: '0 4px 0 rgba(0,0,0,0.05)',
-                                            transform: selected.includes(w) ? 'translateY(2px)' : 'none'
+                                            border: 'none', fontWeight: 800, fontSize: '1rem',
+                                            boxShadow: selected.includes(w) ? 'none' : '0 4px 0 rgba(0,0,0,0.05), 0 8px 20px rgba(0,0,0,0.03)',
+                                            transform: selected.includes(w) ? 'translateY(4px)' : 'none',
+                                            transition: 'all 0.1s ease'
                                         }}
                                     >
                                         {w}
@@ -269,16 +269,18 @@ const RecallGame: React.FC<RecallGameProps> = ({ onScore, isActive }) => {
                             disabled={selected.length !== targets.length || !!feedback}
                             onClick={validateRecall}
                             style={{
-                                height: 56, width: 220, borderRadius: 'var(--radius-lg)', border: 'none',
-                                background: 'var(--purple)', color: 'white', fontWeight: 800,
-                                boxShadow: selected.length === targets.length ? '0 6px 0 #7e22ce, 0 10px 20px rgba(168,85,247,0.3)' : 'none',
-                                opacity: selected.length === targets.length ? 1 : 0.5,
-                                transform: feedback ? 'translateY(4px)' : 'none'
+                                height: 64, width: 280, borderRadius: 'var(--radius-xl)', border: 'none',
+                                background: 'var(--purple)', color: 'white', fontWeight: 900, fontSize: '1.1rem',
+                                letterSpacing: '0.1em',
+                                boxShadow: selected.length === targets.length ? '0 8px 0 #7e22ce, 0 15px 30px rgba(168,85,247,0.4)' : 'none',
+                                opacity: selected.length === targets.length ? 1 : 0.4,
+                                transform: feedback ? 'translateY(4px)' : 'none',
+                                cursor: selected.length === targets.length ? 'pointer' : 'default'
                             }}
                         >
-                            VALIDER ({selected.length}/{targets.length})
+                            VÉRIFIER LE RAPPEL ({selected.length}/{targets.length})
                         </button>
-                    </div>
+                    </motion.div>
                 )}
             </div>
         </div>
