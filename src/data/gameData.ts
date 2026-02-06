@@ -168,14 +168,16 @@ export const GAMES: Record<string, GameInfo> = {
 };
 
 export const HALLUCINATION_DATA: HallucinationData[] = [
-    { text: "La Tour Eiffel, construite en 1889, mesure 324 mètres. Elle devait être démontée après 20 ans. Elle accueille environ 7 millions de visiteurs par an.", hasError: false },
-    { text: "Le cœur humain bat environ 100 000 fois par jour. Il pompe 5 litres de sang par minute et possède 6 cavités : deux oreillettes et quatre ventricules.", hasError: true, error: "Le cœur a 4 cavités, pas 6" },
-    { text: "Python est un langage créé par Guido van Rossum en 1991. Le nom vient du groupe comique britannique Monty Python.", hasError: false },
-    { text: "La photosynthèse permet aux plantes de convertir le CO2 en glucose grâce à la lumière. Ce processus se déroule dans les mitochondries.", hasError: true, error: "Dans les chloroplastes, pas les mitochondries" },
-    { text: "Mozart a composé plus de 600 œuvres durant ses 35 ans de vie. Il a commencé à composer dès l'âge de 5 ans.", hasError: false },
-    { text: "L'ADN humain contient environ 3 milliards de paires de bases et code pour environ 200 000 gènes.", hasError: true, error: "Environ 20 000 gènes, pas 200 000" },
-    { text: "Van Gogh a peint 'La Nuit étoilée' en 1889. Durant sa vie, il a vendu des centaines de tableaux et était très reconnu.", hasError: true, error: "Il n'a vendu qu'un seul tableau de son vivant" },
-    { text: "Le Bitcoin a été créé en 2009 par Satoshi Nakamoto. La première transaction a permis d'acheter deux pizzas pour 10 000 BTC.", hasError: false }
+    { text: "Pierre est plus grand que Paul. Paul est plus grand que Jacques. Jacques est donc le plus petit des trois.", hasError: false },
+    { text: "Si tous les chats sont des mammifères et que tous les mammifères ont un cœur, alors tous les chats ont un cœur.", hasError: false },
+    { text: "Un avion transportant 50 passagers s'écrase sur la frontière entre la France et l'Espagne. On enterre les 20 survivants en Espagne.", hasError: true, error: "On n'enterre pas les survivants." },
+    { text: "Marie a trois frères : Luc, Jean et Marc. Marc a donc deux frères et une sœur.", hasError: false },
+    { text: "Un sac contient 5 billes rouges et 3 billes bleues. Si j'ajoute 2 billes vertes, le sac contient maintenant un total de 11 billes.", hasError: true, error: "5 + 3 + 2 = 10, pas 11." },
+    { text: "Si demain est lundi, alors hier était samedi et aujourd'hui est dimanche.", hasError: false },
+    { text: "Une boîte contient 12 œufs. Si j'en casse trois et que j'en mange deux, il reste 9 œufs entiers dans la boîte.", hasError: true, error: "12 - 3 = 9 cassés, mais seulement 9 restaient au total avant d'en manger. S'il en reste 9, ils ne sont pas tous entiers." },
+    { text: "Alice court plus vite que Bob. Bob court plus vite que Charlie. Donc Charlie court moins vite qu'Alice.", hasError: false },
+    { text: "Certains mois ont 30 jours, d'autres en ont 31. Combien de mois en ont 28 ? La réponse est : tous.", hasError: false },
+    { text: "Le père de Sophie a 5 filles : Lala, Lele, Lili, Lolo. La cinquième s'appelle Lulu.", hasError: true, error: "La cinquième fille s'appelle Sophie." }
 ];
 
 export const FALLACY_DATA: FallacyData[] = [
