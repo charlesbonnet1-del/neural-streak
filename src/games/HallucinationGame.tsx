@@ -7,6 +7,8 @@ import { HALLUCINATION_DATA } from '../data/gameData';
 import { pick } from '../utils/helpers';
 import { HallucinationData } from '../types';
 
+import Stat from '../components/Stat';
+
 interface HallucinationGameProps {
     onBack: () => void;
     onScore: (score: number) => void;
